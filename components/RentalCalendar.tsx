@@ -19,7 +19,7 @@ export default function RentalCalendar({
 }) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
-  const [pickingEnd, setPickingEnd] = useState(false);
+  const [hint, setHint] = useState<string>("");
 
   useEffect(() => {
     fetch(`/api/listings/${listingId}/blocked-dates`)
@@ -37,6 +37,11 @@ export default function RentalCalendar({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
+  function fromYmd(s: string): Date {
+    const [y, m, d] = s.split("-").map((x) => parseInt(x, 10));
+    return new Date(y, m - 1, d);
+  }
+
   function isBlocked(d: Date): boolean {
     const s = ymd(d);
     return blocks.some((b) => s >= b.start && s < b.end);
@@ -49,39 +54,90 @@ export default function RentalCalendar({
     return s >= startDate && s <= endDate;
   }
 
+  // 시작일에서 days일 후까지 블락 없이 가능한지 검사
+  // 가능하면 끝 날짜 반환, 아니면 null
+  function findValidEnd(start: Date, days: number): Date | null {
+    const end = new Date(start);
+    end.setDate(start.getDate() + days - 1);
+    for (let i = 0; i < days; i++) {
+      const cur = new Date(start);
+      cur.setDate(start.getDate() + i);
+      if (isBlocked(cur)) return null;
+    }
+    return end;
+  }
+
   function clickDay(d: Date) {
+    setHint("");
     if (d < today || isBlocked(d)) return;
     const s = ymd(d);
-    if (!startDate || pickingEnd === false || s < startDate) {
-      onChange(s, null);
-      setPickingEnd(true);
+
+    // 1) 시작 날짜를 클릭한 경우 (또는 새로 시작)
+    //    - startDate가 없거나
+    //    - 클릭한 날짜가 현재 startDate보다 이전이거나
+    //    - 현재 endDate가 없는 상태
+    if (!startDate || s < startDate || !endDate) {
+      const start = fromYmd(s);
+      const autoEnd = findValidEnd(start, minDays);
+      if (!autoEnd) {
+        setHint(
+          `이 시작일부터 최소 기간 ${minDays}일 안에 이미 예약된 날이 있어요. 다른 날짜를 골라보세요.`,
+        );
+        onChange(null, null);
+        return;
+      }
+      onChange(s, ymd(autoEnd));
       return;
     }
-    // 종료일 선택 시 최소 기간 검증
-    const start = new Date(startDate);
-    const days = Math.round((d.getTime() - start.getTime()) / 86400000);
+
+    // 2) 종료일 변경 (현재 startDate 이후를 클릭)
+    const start = fromYmd(startDate);
+    const days = Math.round((d.getTime() - start.getTime()) / 86400000) + 1;
     if (days < minDays) {
-      onChange(s, null);
-      setPickingEnd(true);
+      // 너무 짧으면 minDays까지 자동 연장
+      const auto = findValidEnd(start, minDays);
+      if (auto) {
+        onChange(startDate, ymd(auto));
+        setHint(`최소 ${minDays}일이라 자동으로 ${ymd(auto)}까지 연장되었어요.`);
+      }
       return;
     }
-    // 사이에 블락된 날짜가 있는지 검사
+    // 중간에 블락 있는지 검사
     for (let i = 1; i < days; i++) {
       const cur = new Date(start);
       cur.setDate(start.getDate() + i);
       if (isBlocked(cur)) {
-        onChange(s, null);
-        setPickingEnd(true);
+        setHint("선택한 범위 내에 이미 예약된 날이 있어요.");
         return;
       }
     }
     onChange(startDate, s);
-    setPickingEnd(false);
   }
 
   function reset() {
     onChange(null, null);
-    setPickingEnd(false);
+    setHint("");
+  }
+
+  function shift(deltaDays: number) {
+    if (!startDate || !endDate) return;
+    const start = fromYmd(startDate);
+    const end = fromYmd(endDate);
+    end.setDate(end.getDate() + deltaDays);
+    if (end < start) return;
+    const newDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+    if (newDays < minDays) return;
+    // 블락 검사
+    for (let i = 0; i < newDays; i++) {
+      const cur = new Date(start);
+      cur.setDate(start.getDate() + i);
+      if (isBlocked(cur)) {
+        setHint("연장할 수 없는 날짜에 막혀있어요.");
+        return;
+      }
+    }
+    setHint("");
+    onChange(startDate, ymd(end));
   }
 
   function buildMonth(year: number, month: number) {
@@ -166,8 +222,10 @@ export default function RentalCalendar({
         >
           ‹ 이전
         </button>
-        <div className="text-xs text-neutral-500">
-          {pickingEnd ? "종료일을 선택해주세요" : "시작일을 선택해주세요"} · 최소 {minDays}일
+        <div className="text-xs text-neutral-500 text-center">
+          {!startDate
+            ? `시작일을 누르면 ${minDays}일이 자동 선택됩니다`
+            : "종료일을 눌러 기간을 늘리거나, 새 시작일을 누르세요"}
         </div>
         <button
           type="button"
@@ -189,13 +247,12 @@ export default function RentalCalendar({
         <Legend color="bg-neutral-200" label="예약됨" />
       </div>
 
-      {startDate && (
-        <div className="mt-3 p-2 bg-pink-50 rounded text-sm">
+      {startDate && endDate && (
+        <div className="mt-3 p-3 bg-pink-50 border border-pink-200 rounded text-sm space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <strong>{startDate}</strong>
-              {endDate && <> ~ <strong>{endDate}</strong> · {days}일</>}
-              {!endDate && <span className="text-neutral-500"> ~ ?</span>}
+              <strong>{startDate}</strong> ~ <strong>{endDate}</strong>
+              <span className="text-neutral-600"> · {days}일</span>
             </div>
             <button
               type="button"
@@ -205,6 +262,34 @@ export default function RentalCalendar({
               초기화
             </button>
           </div>
+
+          <div className="flex flex-wrap gap-1">
+            <span className="text-[11px] text-neutral-500 mr-1">기간 조정:</span>
+            <button type="button" onClick={() => shift(-30)} className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100">
+              -1개월
+            </button>
+            <button type="button" onClick={() => shift(-7)} className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100">
+              -1주
+            </button>
+            <button type="button" onClick={() => shift(7)} className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100">
+              +1주
+            </button>
+            <button type="button" onClick={() => shift(30)} className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100">
+              +1개월
+            </button>
+            <button type="button" onClick={() => shift(180)} className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100">
+              +6개월
+            </button>
+            <button type="button" onClick={() => shift(365)} className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100">
+              +1년
+            </button>
+          </div>
+        </div>
+      )}
+
+      {hint && (
+        <div className="mt-2 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded p-2">
+          ⚠️ {hint}
         </div>
       )}
     </div>
