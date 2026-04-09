@@ -141,18 +141,26 @@ export default async function MePage() {
         )}
       </Section>
 
-      <Section title={`성사된 딜 (${myDeals.length})`}>
+      <Section title={`계약 진행 / 완료 (${myDeals.length})`}>
         {myDeals.length === 0 ? (
-          <Empty>아직 성사된 딜이 없습니다.</Empty>
+          <Empty>진행 중이거나 완료된 계약이 없습니다.</Empty>
         ) : (
           <ul className="divide-y">
-            {myDeals.map((d) => (
-              <li key={d.id} className="py-2">
-                <Link href={`/deals/${d.id}`} className="hover:text-pink-600">
-                  {d.listing.title} — {d.agreedPrice.toLocaleString()}만원 ({d.status})
-                </Link>
-              </li>
-            ))}
+            {myDeals.map((d) => {
+              const cd = d.contractData ? JSON.parse(d.contractData) : {};
+              const bothSigned = !!cd.buyerSignature && !!cd.sellerSignature;
+              const label = bothSigned ? "✅ 계약 체결" : "📝 진행 중";
+              const color = bothSigned ? "text-green-700" : "text-blue-700";
+              return (
+                <li key={d.id} className="py-2">
+                  <Link href={`/deals/${d.id}`} className="hover:text-pink-600">
+                    {d.listing.title} —{" "}
+                    {d.agreedPrice.toLocaleString()}만원{" "}
+                    <span className={`text-xs font-semibold ${color}`}>{label}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Section>
