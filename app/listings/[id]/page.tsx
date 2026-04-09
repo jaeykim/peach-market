@@ -18,7 +18,9 @@ export default async function ListingDetailPage({
   const { id } = await params;
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { owner: { select: { id: true, name: true, verifiedAt: true } } },
+    include: {
+      owner: { select: { id: true, name: true, verifiedAt: true } },
+    },
   });
   if (!listing) notFound();
 
@@ -62,6 +64,15 @@ export default async function ListingDetailPage({
         {listing.isShortTerm && (
           <span className="text-xs font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
             ⏳ 단기 {listing.rentalMonths ? `${listing.rentalMonths}개월` : ""}
+          </span>
+        )}
+        {listing.ownershipVerifiedAt ? (
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-700">
+            ✓ 소유권 검증 완료
+          </span>
+        ) : (
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-neutral-100 text-neutral-500">
+            ⚠️ 소유권 미검증
           </span>
         )}
         <span className="text-xs text-neutral-500">
@@ -145,6 +156,7 @@ export default async function ListingDetailPage({
             isOwner={isOwner}
             isLoggedIn={!!user}
             isClosed={listing.status === "CLOSED"}
+            ownershipVerified={!!listing.ownershipVerifiedAt}
           />
           {user && <RegistryViewer listingId={listing.id} />}
           <MatchRecommendations listingId={listing.id} />

@@ -24,6 +24,7 @@ export default async function MapPage() {
       isSublet: true,
       isShortTerm: true,
       rentalMonths: true,
+      ownershipVerifiedAt: true,
       bids: {
         where: { status: { notIn: ["REJECTED", "WITHDRAWN"] } },
         select: { proposerId: true },
@@ -31,8 +32,9 @@ export default async function MapPage() {
     },
   });
 
-  const listings = rows.map(({ bids, ...rest }) => ({
+  const listings = rows.map(({ bids, ownershipVerifiedAt, ...rest }) => ({
     ...rest,
+    ownershipVerified: !!ownershipVerifiedAt,
     negotiationCount: new Set(bids.map((b) => b.proposerId)).size,
   }));
 

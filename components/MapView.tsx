@@ -19,6 +19,7 @@ type Listing = {
   propertyType: string;
   areaExclusive: number | null;
   photos: string | null;
+  ownershipVerified: boolean;
   negotiationCount: number;
 };
 
@@ -446,6 +447,7 @@ export default function MapView({
                             </Tag>
                           )}
                           <Tag color="neutral">{propTypeLabel(l.propertyType)}</Tag>
+                          {l.ownershipVerified && <Tag color="green">✓ 검증</Tag>}
                           {l.negotiationCount > 0 && (
                             <Tag color="orange">🤝 {l.negotiationCount}</Tag>
                           )}
@@ -873,7 +875,7 @@ function Tag({
   color,
   children,
 }: {
-  color: "pink" | "blue" | "neutral" | "orange";
+  color: "pink" | "blue" | "neutral" | "orange" | "green";
   children: React.ReactNode;
 }) {
   const cls =
@@ -883,6 +885,8 @@ function Tag({
       ? "bg-blue-100 text-blue-700"
       : color === "orange"
       ? "bg-orange-100 text-orange-700"
+      : color === "green"
+      ? "bg-green-100 text-green-700"
       : "bg-neutral-100 text-neutral-700";
   return (
     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cls}`}>{children}</span>

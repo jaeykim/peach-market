@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import VerifyButton from "@/components/VerifyButton";
+import VerifyOwnershipButton from "@/components/VerifyOwnershipButton";
 import { sideLabel } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
@@ -63,15 +64,21 @@ export default async function MePage() {
           <ul className="divide-y">
             {myListings.map((l) => (
               <li key={l.id} className="py-2">
-                <Link href={`/listings/${l.id}`} className="hover:text-pink-600">
-                  <span className="text-xs font-bold mr-2">
-                    [{sideLabel(l.dealType, l.side, l.isSublet)}]
-                  </span>
-                  {l.title}
-                  <span className="text-xs text-neutral-500 ml-2">
-                    ({l.status} · 조회 {l.viewCount}회)
-                  </span>
-                </Link>
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/listings/${l.id}`} className="hover:text-pink-600 flex-1 min-w-0">
+                    <span className="text-xs font-bold mr-2">
+                      [{sideLabel(l.dealType, l.side, l.isSublet)}]
+                    </span>
+                    {l.title}
+                    <span className="text-xs text-neutral-500 ml-2">
+                      ({l.status} · 조회 {l.viewCount}회)
+                    </span>
+                  </Link>
+                  <VerifyOwnershipButton
+                    listingId={l.id}
+                    initialVerified={!!l.ownershipVerifiedAt}
+                  />
+                </div>
               </li>
             ))}
           </ul>

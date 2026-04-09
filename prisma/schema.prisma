@@ -84,6 +84,10 @@ model Listing {
 
   status      String   @default("OPEN") // OPEN/IN_NEGOTIATION/CLOSED
 
+  // 소유권 검증 (등기부 소유자 이름 vs 등록자 실명 대조)
+  ownershipVerifiedAt DateTime?
+  ownershipCheckResult String? // JSON: { registryOwner, listingOwner, matched, checkedAt }
+
   viewCount   Int      @default(0)
 
   createdAt   DateTime @default(now())

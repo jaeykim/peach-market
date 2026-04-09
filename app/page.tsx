@@ -201,6 +201,47 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Safety: 4-layer defense */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center">
+            허위 매물·사기 걱정되시죠?
+          </h2>
+          <p className="text-center text-neutral-500 text-sm mt-2">
+            피치마켓은 4겹의 방어선으로 사기 매물을 막습니다.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-10">
+            <SafetyStep
+              n="1"
+              icon="🆔"
+              title="실명 인증"
+              desc="PASS/NICE로 등록자 본인이 누구인지 먼저 확인합니다."
+            />
+            <SafetyStep
+              n="2"
+              icon="🏛️"
+              title="등기부 대조"
+              desc="등기부등본의 소유자 이름이 등록자와 일치하는지 자동 대조. ✓ 검증 뱃지가 붙어요."
+            />
+            <SafetyStep
+              n="3"
+              icon="🛡️"
+              title="에스크로 보관"
+              desc="보증금·월세는 피치마켓이 보관합니다. 입주 확인 전까지 집주인에게 전달되지 않아요."
+            />
+            <SafetyStep
+              n="4"
+              icon="📄"
+              title="계약서·전자서명"
+              desc="국토부 표준 계약서와 전자서명으로 분쟁 시 법적 근거를 남깁니다."
+            />
+          </div>
+          <p className="text-center text-xs text-neutral-500 mt-6">
+            설사 사기 매물이 올라와도, 보증금이 에스크로에 있기 때문에 실제 피해로 이어지지 않습니다.
+          </p>
+        </div>
+      </section>
+
       {/* Local neighborhood */}
       <section className="py-16 bg-neutral-50">
         <div className="max-w-3xl mx-auto px-4 text-center">
@@ -307,6 +348,31 @@ function Stat({ n, label, suffix }: { n: number; label: string; suffix?: string 
         {suffix}
       </div>
       <div className="text-xs">{label}</div>
+    </div>
+  );
+}
+
+function SafetyStep({
+  n,
+  icon,
+  title,
+  desc,
+}: {
+  n: string;
+  icon: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="border rounded-lg p-4 bg-neutral-50">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="w-6 h-6 rounded-full bg-pink-600 text-white text-xs font-bold flex items-center justify-center">
+          {n}
+        </span>
+        <span className="text-2xl">{icon}</span>
+      </div>
+      <h3 className="font-bold text-sm">{title}</h3>
+      <p className="text-xs text-neutral-600 mt-1">{desc}</p>
     </div>
   );
 }
