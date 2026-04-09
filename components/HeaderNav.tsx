@@ -3,6 +3,75 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import LanguageSwitcher from "./LanguageSwitcher";
+
+// 클라이언트용 간이 사전 (HeaderNav 라벨)
+const NAV_T: Record<string, Record<string, string>> = {
+  ko: {
+    find: "방 찾기",
+    list: "방 올리기",
+    me: "내 활동",
+    login: "로그인",
+    logout: "로그아웃",
+    edit: "내 정보 수정",
+  },
+  en: {
+    find: "Find a Room",
+    list: "List a Room",
+    me: "My Activity",
+    login: "Log in",
+    logout: "Log out",
+    edit: "Edit Profile",
+  },
+  zh: {
+    find: "找房",
+    list: "发布房源",
+    me: "我的",
+    login: "登录",
+    logout: "退出",
+    edit: "修改资料",
+  },
+  ja: {
+    find: "部屋を探す",
+    list: "部屋を出す",
+    me: "マイページ",
+    login: "ログイン",
+    logout: "ログアウト",
+    edit: "プロフィール編集",
+  },
+  vi: {
+    find: "Tìm phòng",
+    list: "Đăng phòng",
+    me: "Hoạt động",
+    login: "Đăng nhập",
+    logout: "Đăng xuất",
+    edit: "Sửa hồ sơ",
+  },
+  mn: {
+    find: "Өрөө хайх",
+    list: "Өрөө байршуулах",
+    me: "Миний",
+    login: "Нэвтрэх",
+    logout: "Гарах",
+    edit: "Профайл засах",
+  },
+  ru: {
+    find: "Найти",
+    list: "Разместить",
+    me: "Профиль",
+    login: "Войти",
+    logout: "Выйти",
+    edit: "Редактировать",
+  },
+  id: {
+    find: "Cari",
+    list: "Pasang",
+    me: "Profil",
+    login: "Masuk",
+    logout: "Keluar",
+    edit: "Edit Profil",
+  },
+};
 
 type Notif = {
   id: string;
@@ -14,7 +83,8 @@ type Notif = {
 
 type Me = { id: string; name: string; email: string; phone: string | null } | null;
 
-export default function HeaderNav() {
+export default function HeaderNav({ locale = "ko" }: { locale?: string }) {
+  const t = NAV_T[locale] || NAV_T.ko;
   const router = useRouter();
   const pathname = usePathname();
   const [me, setMe] = useState<Me>(null);
@@ -80,11 +150,12 @@ export default function HeaderNav() {
 
   return (
     <nav className="flex items-center gap-4 text-sm">
-      <Link href="/map" className="hover:text-pink-600">방 찾기</Link>
-      <Link href="/listings/new" className="hover:text-pink-600">방 올리기</Link>
-      {me && <Link href="/me" className="hover:text-pink-600">내 활동</Link>}
+      <Link href="/map" className="hover:text-pink-600">{t.find}</Link>
+      <Link href="/listings/new" className="hover:text-pink-600">{t.list}</Link>
+      {me && <Link href="/me" className="hover:text-pink-600">{t.me}</Link>}
+      <LanguageSwitcher current={locale} />
       {!me ? (
-        <Link href="/login" className="hover:text-pink-600">로그인</Link>
+        <Link href="/login" className="hover:text-pink-600">{t.login}</Link>
       ) : (
         <div className="relative" ref={userMenuRef}>
           <button
@@ -114,13 +185,13 @@ export default function HeaderNav() {
                 onClick={() => setUserMenuOpen(false)}
                 className="block px-3 py-2 text-sm hover:bg-neutral-50"
               >
-                ⚙️ 내 정보 수정
+                ⚙️ {t.edit}
               </Link>
               <button
                 onClick={logout}
                 className="block w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 border-t text-red-600"
               >
-                🚪 로그아웃
+                🚪 {t.logout}
               </button>
             </div>
           )}

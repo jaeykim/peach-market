@@ -1,10 +1,13 @@
 import MapView from "@/components/MapView";
 import { prisma } from "@/lib/db";
+import { getLocale, tFor } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function MapPage() {
+  const locale = await getLocale();
+  const t = tFor(locale);
   const rows = await prisma.listing.findMany({
     where: { status: { in: ["OPEN", "IN_NEGOTIATION"] } },
     orderBy: { createdAt: "desc" },
@@ -42,10 +45,8 @@ export default async function MapPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <h1 className="text-2xl font-bold mb-1">🏠 동네 월세</h1>
-      <p className="text-sm text-neutral-600 mb-4">
-        수수료 없는 월세·단기·전대. 동네에서 직접 만나 계약하세요.
-      </p>
+      <h1 className="text-2xl font-bold mb-1">{t("map.title")}</h1>
+      <p className="text-sm text-neutral-600 mb-4">{t("map.subtitle")}</p>
       <MapView clientId={clientId} listings={listings} />
     </div>
   );

@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import RotatingTypeCards from "@/components/RotatingTypeCards";
+import { getLocale, tFor } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
+  const locale = await getLocale();
+  const t = tFor(locale);
   const listingCount = await prisma.listing.count({
     where: { status: { in: ["OPEN", "IN_NEGOTIATION"] }, dealType: "MONTHLY" },
   });
@@ -16,32 +19,30 @@ export default async function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 py-20 text-center">
           <div className="text-5xl mb-4">🍑</div>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            동네에서 만나는 <br />
-            <span className="text-pink-600">수수료 0원 월세</span>
+            {t("hero.title.line1")} <br />
+            <span className="text-pink-600">{t("hero.title.line2")}</span>
           </h1>
           <p className="mt-5 text-base sm:text-lg text-neutral-600 max-w-2xl mx-auto">
-            비싸지 않은 월세방, 짧게 머물 방, 복비 없이 만나고 싶은 분들을 위해.
-            <br className="hidden sm:block" />
-            작은 동네 커뮤니티처럼, 피치마켓이 계약서와 안전장치만 조용히 도와드려요.
+            {t("hero.subtitle")}
           </p>
           <div className="mt-8 flex gap-3 justify-center flex-wrap">
             <Link
               href="/map"
               className="bg-pink-600 hover:bg-pink-700 text-white font-bold px-6 py-3 rounded-lg text-sm sm:text-base"
             >
-              🔍 방 찾기
+              {t("hero.cta.find")}
             </Link>
             <Link
               href="/listings/new"
               className="bg-white border-2 border-pink-600 text-pink-600 font-bold px-6 py-3 rounded-lg text-sm sm:text-base hover:bg-pink-50"
             >
-              🏠 내 방 올리기
+              {t("hero.cta.list")}
             </Link>
           </div>
           <div className="mt-10 flex justify-center gap-8 text-sm text-neutral-500">
-            <Stat n={listingCount} label="등록 매물" />
-            <Stat n={0} label="중개 수수료" suffix="원" />
-            <Stat n={0} label="숨은 비용" suffix="원" />
+            <Stat n={listingCount} label={t("stat.listings")} />
+            <Stat n={0} label={t("stat.fee")} />
+            <Stat n={0} label={t("stat.hidden")} />
           </div>
         </div>
       </section>
@@ -50,10 +51,10 @@ export default async function LandingPage() {
       <section className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-center">
-            이런 고민, 있으신가요?
+            {t("desires.title")}
           </h2>
           <p className="text-center text-neutral-500 text-sm mt-2">
-            피치마켓이 처음부터 끝까지 무료로 해결해드려요.
+            {t("desires.subtitle")}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
             <DesireCard
@@ -108,10 +109,10 @@ export default async function LandingPage() {
       <section className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-center">
-            어떤 계약이든, 무료로
+            {t("types.title")}
           </h2>
           <p className="text-center text-neutral-500 text-sm mt-2">
-            월세 · 단기임대 · 전대 — 모두 피치마켓에서
+            {t("types.subtitle")}
           </p>
           <RotatingTypeCards />
         </div>
@@ -121,10 +122,10 @@ export default async function LandingPage() {
       <section className="py-16 bg-gradient-to-br from-pink-50 to-white">
         <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-center">
-            다른 단기임대 플랫폼은요?
+            {t("diff.title")}
           </h2>
           <p className="text-center text-neutral-500 text-sm mt-2">
-            계약서 없이 몇 백만원을 주고받고 있으세요?
+            {t("diff.subtitle")}
           </p>
 
           <div className="mt-10 grid md:grid-cols-2 gap-4">
@@ -205,10 +206,10 @@ export default async function LandingPage() {
       <section className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-center">
-            허위 매물·사기 걱정되시죠?
+            {t("safety.title")}
           </h2>
           <p className="text-center text-neutral-500 text-sm mt-2">
-            피치마켓은 4겹의 방어선으로 사기 매물을 막습니다.
+            {t("safety.subtitle")}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-10">
             <SafetyStep
@@ -246,7 +247,7 @@ export default async function LandingPage() {
       <section className="py-16 bg-neutral-50">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold">
-            작은 동네, 신뢰할 수 있는 이웃
+            {t("neighborhood.title")}
           </h2>
           <p className="text-neutral-600 text-sm mt-3 leading-relaxed">
             피치마켓은 큰 플랫폼이 되려 하지 않아요. 같은 동네에 사는 사람들끼리
@@ -262,10 +263,10 @@ export default async function LandingPage() {
       <section className="py-16 bg-neutral-50">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-center">
-            이렇게 진행돼요
+            {t("how.title")}
           </h2>
           <p className="text-center text-neutral-500 text-sm mt-2">
-            복잡한 단계 없이, 중요한 것만 자동으로
+            {t("how.subtitle")}
           </p>
           <ol className="mt-10 space-y-3">
             {[
@@ -297,12 +298,8 @@ export default async function LandingPage() {
       {/* CTA */}
       <section className="bg-pink-600">
         <div className="max-w-3xl mx-auto px-4 py-16 text-center text-white">
-          <h2 className="text-2xl sm:text-3xl font-bold">
-            복비 없이, 조용히 방을 구하세요
-          </h2>
-          <p className="mt-3 text-pink-100 text-sm">
-            가입도 검색도 계약도 모두 무료입니다.
-          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold">{t("cta.title")}</h2>
+          <p className="mt-3 text-pink-100 text-sm">{t("cta.sub")}</p>
           <div className="mt-6 flex gap-3 justify-center flex-wrap">
             <Link
               href="/map"
@@ -324,28 +321,28 @@ export default async function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
-              <div className="text-base font-bold text-white mb-1">🍑 피치마켓</div>
-              <div>수수료 없는 월세 · 단기 · 전대</div>
+              <div className="text-base font-bold text-white mb-1">🍑 Peach Market</div>
+              <div>{t("footer.tagline")}</div>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
-              <Link href="/map" className="hover:text-white">방 찾기</Link>
-              <Link href="/listings/new" className="hover:text-white">방 올리기</Link>
-              <Link href="/login" className="hover:text-white">로그인</Link>
+              <Link href="/map" className="hover:text-white">{t("hero.cta.find")}</Link>
+              <Link href="/listings/new" className="hover:text-white">{t("hero.cta.list")}</Link>
+              <Link href="/login" className="hover:text-white">{t("nav.login")}</Link>
             </div>
           </div>
           <div className="border-t border-neutral-700 pt-4 flex flex-col sm:flex-row justify-between gap-2">
             <div className="text-[11px] leading-relaxed">
-              상호: 피치마켓 · 대표: (주)피치마켓 · 사업자등록번호: 000-00-00000
+              Peach Market · CEO: Peach Market Inc. · Biz #: 000-00-00000
               <br />
-              이메일: support@peach.market · 주소: 서울특별시 강남구 (가상)
+              support@peach.market · Seoul, Gangnam-gu (demo)
             </div>
             <div className="flex gap-3">
-              <Link href="/terms" className="hover:text-white">이용약관</Link>
-              <Link href="/privacy" className="hover:text-white">개인정보처리방침</Link>
-              <Link href="/refund" className="hover:text-white">환불 정책</Link>
+              <Link href="/terms" className="hover:text-white">{t("footer.terms")}</Link>
+              <Link href="/privacy" className="hover:text-white">{t("footer.privacy")}</Link>
+              <Link href="/refund" className="hover:text-white">{t("footer.refund")}</Link>
             </div>
           </div>
-          <div className="text-[10px] text-neutral-500">© 2026 피치마켓. 데모 서비스입니다.</div>
+          <div className="text-[10px] text-neutral-500">© 2026 Peach Market. Demo service.</div>
         </div>
       </footer>
     </div>

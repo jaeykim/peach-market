@@ -25,6 +25,11 @@ model User {
   brokerOffice  String? // 사무소명
   brokerRegion  String? // 활동 지역
 
+  // 알림 설정
+  notifEmailEnabled Boolean @default(true)
+  notifPushEnabled  Boolean @default(true)
+  notifAppEnabled   Boolean @default(true)
+
   listings Listing[]
   bids     Bid[]
   dealsAsBuyer  Deal[] @relation("DealBuyer")

@@ -11,6 +11,9 @@ export default function EditMePage() {
   const [address, setAddress] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [notifEmail, setNotifEmail] = useState(true);
+  const [notifPush, setNotifPush] = useState(true);
+  const [notifApp, setNotifApp] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -27,6 +30,9 @@ export default function EditMePage() {
       setPhone(j.user.phone || "");
       setResidentNumber(j.user.residentNumber || "");
       setAddress(j.user.address || "");
+      setNotifEmail(j.user.notifEmailEnabled ?? true);
+      setNotifPush(j.user.notifPushEnabled ?? true);
+      setNotifApp(j.user.notifAppEnabled ?? true);
       setLoading(false);
     });
   }, [router]);
@@ -37,7 +43,15 @@ export default function EditMePage() {
     setMsg("");
     setError("");
     try {
-      const body: Record<string, string> = { name, phone, residentNumber, address };
+      const body: Record<string, unknown> = {
+        name,
+        phone,
+        residentNumber,
+        address,
+        notifEmailEnabled: notifEmail,
+        notifPushEnabled: notifPush,
+        notifAppEnabled: notifApp,
+      };
       if (newPassword) {
         body.currentPassword = currentPassword;
         body.newPassword = newPassword;
@@ -125,6 +139,39 @@ export default function EditMePage() {
               className="input"
             />
           </Field>
+        </div>
+
+        <div className="border-t pt-4">
+          <h2 className="text-sm font-bold text-neutral-700 mb-2">🔔 알림 설정</h2>
+          <div className="space-y-2 text-sm">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span>인앱 알림 (헤더 종)</span>
+              <input
+                type="checkbox"
+                checked={notifApp}
+                onChange={(e) => setNotifApp(e.target.checked)}
+                className="w-4 h-4"
+              />
+            </label>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span>이메일 알림</span>
+              <input
+                type="checkbox"
+                checked={notifEmail}
+                onChange={(e) => setNotifEmail(e.target.checked)}
+                className="w-4 h-4"
+              />
+            </label>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span>모바일 푸시 알림</span>
+              <input
+                type="checkbox"
+                checked={notifPush}
+                onChange={(e) => setNotifPush(e.target.checked)}
+                className="w-4 h-4"
+              />
+            </label>
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

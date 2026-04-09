@@ -14,6 +14,9 @@ export async function GET() {
       phone: user.phone,
       residentNumber: user.residentNumber,
       address: user.address,
+      notifEmailEnabled: user.notifEmailEnabled,
+      notifPushEnabled: user.notifPushEnabled,
+      notifAppEnabled: user.notifAppEnabled,
     },
   });
 }
@@ -25,6 +28,9 @@ const Patch = z.object({
   address: z.string().optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6).optional(),
+  notifEmailEnabled: z.boolean().optional(),
+  notifPushEnabled: z.boolean().optional(),
+  notifAppEnabled: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -35,7 +41,17 @@ export async function PATCH(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "잘못된 입력" }, { status: 400 });
   }
-  const { name, phone, residentNumber, address, currentPassword, newPassword } = parsed.data;
+  const {
+    name,
+    phone,
+    residentNumber,
+    address,
+    currentPassword,
+    newPassword,
+    notifEmailEnabled,
+    notifPushEnabled,
+    notifAppEnabled,
+  } = parsed.data;
 
   const data: {
     name?: string;
@@ -43,11 +59,17 @@ export async function PATCH(req: NextRequest) {
     residentNumber?: string;
     address?: string;
     password?: string;
+    notifEmailEnabled?: boolean;
+    notifPushEnabled?: boolean;
+    notifAppEnabled?: boolean;
   } = {};
   if (name !== undefined) data.name = name;
   if (phone !== undefined) data.phone = phone;
   if (residentNumber !== undefined) data.residentNumber = residentNumber;
   if (address !== undefined) data.address = address;
+  if (notifEmailEnabled !== undefined) data.notifEmailEnabled = notifEmailEnabled;
+  if (notifPushEnabled !== undefined) data.notifPushEnabled = notifPushEnabled;
+  if (notifAppEnabled !== undefined) data.notifAppEnabled = notifAppEnabled;
 
   if (newPassword) {
     if (!currentPassword || !(await verifyPassword(currentPassword, user.password))) {
