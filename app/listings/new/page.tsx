@@ -46,47 +46,7 @@ export default function NewListingPage({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // AI fair price state
-  const [fairPrice, setFairPrice] = useState<{
-    estimate: number;
-    low: number;
-    high: number;
-    reasoning: string;
-    source: string;
-  } | null>(null);
-  const [fpLoading, setFpLoading] = useState(false);
-
-  async function getAIPrice() {
-    if (!address) {
-      setError("AI 적정가 추천 전에 주소를 먼저 선택해주세요.");
-      return;
-    }
-    setError("");
-    setFpLoading(true);
-    try {
-      const res = await fetch("/api/fair-price", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address: address.address,
-          propertyType,
-          dealType,
-          areaExclusive: areaExclusive ? parseFloat(areaExclusive) : undefined,
-          floor: floor ? parseInt(floor, 10) : undefined,
-          totalFloors: totalFloors ? parseInt(totalFloors, 10) : undefined,
-          builtYear: builtYear ? parseInt(builtYear, 10) : undefined,
-          rooms: rooms ? parseInt(rooms, 10) : undefined,
-        }),
-      });
-      if (res.ok) setFairPrice(await res.json());
-    } finally {
-      setFpLoading(false);
-    }
-  }
-
-  function applyFairPrice() {
-    if (fairPrice) setAskingPrice(String(fairPrice.estimate));
-  }
+  // Phase 1: AI 적정가 기능 제거 (고정가 거래). Phase 2에서 다시 활성.
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -155,8 +115,8 @@ export default function NewListingPage({
 
       <form onSubmit={submit} className="space-y-6">
         {/* 1. 등록 유형 */}
-        <Section title="① 등록 유형" subtitle="어떤 거래를 하시나요?">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Section title="① 등록 유형" subtitle="방을 어떻게 내놓으시나요?">
+          <div className="grid grid-cols-2 gap-3">
             <BigOption
               active={side === "SELL" && !isSublet}
               activeColor="pink"
@@ -168,16 +128,6 @@ export default function NewListingPage({
               desc="내 방을 빌려줍니다"
             />
             <BigOption
-              active={side === "BUY" && !isSublet}
-              activeColor="blue"
-              onClick={() => {
-                setSide("BUY");
-                setIsSublet(false);
-              }}
-              label="🔍 임차"
-              desc="살 방을 구합니다"
-            />
-            <BigOption
               active={side === "SELL" && isSublet}
               activeColor="pink"
               onClick={() => {
@@ -186,16 +136,6 @@ export default function NewListingPage({
               }}
               label="↪️ 전대"
               desc="임차 중인 집을 다시 빌려줍니다"
-            />
-            <BigOption
-              active={side === "BUY" && isSublet}
-              activeColor="blue"
-              onClick={() => {
-                setSide("BUY");
-                setIsSublet(true);
-              }}
-              label="↩️ 전차"
-              desc="전대 매물을 찾습니다"
             />
           </div>
         </Section>
@@ -251,9 +191,6 @@ export default function NewListingPage({
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-neutral-400 mt-1">
-                매매는 Phase 2 예정
-              </p>
             </Field>
           </div>
 
@@ -331,25 +268,18 @@ export default function NewListingPage({
         {/* 5. 가격 + AI 추천 */}
         <Section title="⑤ 희망 가격" subtitle="적정가를 모르겠다면 AI 추천을 받아보세요">
           <div className="space-y-2">
-            <Field label={`희망 ${priceLabel} (만원) *`}>
-              <div className="flex gap-2">
-                <input
-                  className="input"
-                  required
-                  type="number"
-                  placeholder="예) 25000 (= 2억 5000만원)"
-                  value={askingPrice}
-                  onChange={(e) => setAskingPrice(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={getAIPrice}
-                  disabled={fpLoading}
-                  className="shrink-0 bg-purple-100 text-purple-700 font-semibold px-3 rounded text-sm whitespace-nowrap hover:bg-purple-200 disabled:opacity-50"
-                >
-                  {fpLoading ? "분석 중..." : "✨ AI 적정가"}
-                </button>
-              </div>
+            <Field label={`${priceLabel} (만원) *`}>
+              <input
+                className="input"
+                required
+                type="number"
+                placeholder="예) 55 (= 월 55만원)"
+                value={askingPrice}
+                onChange={(e) => setAskingPrice(e.target.value)}
+              />
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                Phase 1은 고정가 거래입니다. 이 금액으로 신청이 접수됩니다.
+              </p>
             </Field>
 
             {side === "BUY" && (
@@ -381,29 +311,6 @@ export default function NewListingPage({
                     />
                   </Field>
                 </div>
-              </div>
-            )}
-
-            {fairPrice && (
-              <div className="border-l-4 border-purple-400 bg-purple-50 p-3 rounded text-sm">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-purple-900">
-                    AI 적정가 추천: {(fairPrice.estimate / 10000).toFixed(1)}억
-                    <span className="text-xs ml-1">({fairPrice.estimate.toLocaleString()}만원)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={applyFairPrice}
-                    className="text-xs bg-purple-600 text-white px-2 py-1 rounded font-semibold"
-                  >
-                    적용
-                  </button>
-                </div>
-                <div className="text-xs text-purple-700 mt-1">
-                  범위 {fairPrice.low.toLocaleString()} ~ {fairPrice.high.toLocaleString()}만원
-                </div>
-                <p className="text-xs text-purple-800 mt-1">{fairPrice.reasoning}</p>
-                <p className="text-[10px] text-purple-500 mt-1">source: {fairPrice.source}</p>
               </div>
             )}
 

@@ -14,9 +14,6 @@ export default async function LandingPage() {
       <section className="bg-gradient-to-br from-pink-50 via-white to-purple-50">
         <div className="max-w-5xl mx-auto px-4 py-20 text-center">
           <div className="text-5xl mb-4">🍑</div>
-          <div className="text-xs font-bold text-pink-600 bg-pink-100 inline-block px-3 py-1 rounded-full mb-4">
-            BETA · 대학가 월세 · 단기 · 전대
-          </div>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
             학생과 집주인이 <br />
             <span className="text-pink-600">직접 만나는 대학가 월세</span>
@@ -202,19 +199,6 @@ export default async function LandingPage() {
               </li>
             ))}
           </ol>
-        </div>
-      </section>
-
-      {/* Phase 2 teaser */}
-      <section className="py-12 bg-neutral-100">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <p className="text-xs font-bold text-neutral-500 mb-2">COMING SOON</p>
-          <h3 className="font-bold text-lg">
-            매매·전세 거래는 Phase 2에서 만나요
-          </h3>
-          <p className="text-sm text-neutral-600 mt-2">
-            대학가 월세 서비스가 안정화되면, 공인중개사 파트너와 함께 매매·전세 거래도 지원할 예정입니다.
-          </p>
         </div>
       </section>
 

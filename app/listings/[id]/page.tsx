@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import BidPanel from "@/components/BidPanel";
+import ApplicationPanel from "@/components/ApplicationPanel";
 import RegistryViewer from "@/components/RegistryViewer";
 import FavoriteButton from "@/components/FavoriteButton";
 import MatchRecommendations from "@/components/MatchRecommendations";
@@ -135,9 +135,8 @@ export default async function ListingDetailPage({
               {listing.description}
             </div>
           )}
-          <BidPanel
+          <ApplicationPanel
             listingId={listing.id}
-            listingSide={listing.side}
             askingPrice={listing.askingPrice}
             isOwner={isOwner}
             currentUserId={user?.id ?? null}

@@ -340,40 +340,6 @@ async function main() {
       photos: photos("kku1", "kku2"),
     },
 
-    // === 학생 구인 글 (BUY) ===
-    {
-      ownerId: student1.id,
-      side: "BUY",
-      title: "연세대 근처 월 50 이하 원룸 찾아요",
-      address: "서울특별시 서대문구 신촌로",
-      lat: 37.5570,
-      lng: 126.9386,
-      propertyType: "STUDIO",
-      dealType: "MONTHLY",
-      rooms: 1,
-      bathrooms: 1,
-      askingPrice: 50,
-      priceMax: 50,
-      description:
-        "연세대 근처 도보 10분 이내. 보증금 1000 이하. 풀옵션이면 좋고 세탁기·냉장고 필수.",
-    },
-    {
-      ownerId: student3.id,
-      side: "BUY",
-      title: "홍대 근처 단기 3개월 구해요 (방학)",
-      address: "서울특별시 마포구 와우산로",
-      lat: 37.5540,
-      lng: 126.9255,
-      propertyType: "STUDIO",
-      dealType: "MONTHLY",
-      isShortTerm: true,
-      rentalMonths: 3,
-      rooms: 1,
-      bathrooms: 1,
-      askingPrice: 80,
-      priceMax: 80,
-      description: "여름방학 3개월 교환 준비 기간용. 풀옵션 필수.",
-    },
   ];
 
   for (const data of listings) {

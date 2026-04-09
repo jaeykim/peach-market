@@ -6,16 +6,11 @@ export const metadata = { title: "공인중개사 파트너 - 피치마켓" };
 export default function BrokersPage() {
   return (
     <div className="bg-neutral-50">
-      {/* Phase 2 배너 */}
-      <div className="bg-yellow-100 border-b border-yellow-300 py-3 text-center text-xs font-semibold text-yellow-900">
-        ⚠️ 현재 피치마켓은 Phase 1(대학가 월세 직거래) 단계입니다. 중개사 파트너십은 Phase 2에 오픈 예정입니다.
-      </div>
-
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="max-w-5xl mx-auto px-4 py-20 text-center">
           <div className="text-xs font-bold text-blue-600 mb-2">
-            FOR LICENSED BROKERS · COMING IN PHASE 2
+            FOR LICENSED BROKERS
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
             반복 업무는 기술이,

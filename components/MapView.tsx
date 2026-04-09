@@ -93,7 +93,8 @@ export default function MapView({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [tab, setTab] = useState<Tab>("RENT");
-  const [sideFilter, setSideFilter] = useState<SideFilter>("ALL");
+  // Phase 1: 임대(SELL)만 노출
+  const [sideFilter] = useState<SideFilter>("SELL");
   const [dealFilter, setDealFilter] = useState<DealFilter>("ALL"); // 임대 탭에서만 사용 (전체/전세/월세)
   const [regionFilter, setRegionFilter] = useState<string>("ALL");
   // 매물 종류는 다중 선택 (Set으로 관리; 비어있으면 "전체")
@@ -333,8 +334,6 @@ export default function MapView({
       <Tabs tab={tab} setTab={setTab} />
       <Filters
         tab={tab}
-        sideFilter={sideFilter}
-        setSideFilter={setSideFilter}
         dealFilter={dealFilter}
         setDealFilter={setDealFilter}
         propTypes={propTypes}
@@ -351,7 +350,6 @@ export default function MapView({
         maxDeposit={maxDeposit}
         setMaxDeposit={setMaxDeposit}
         onReset={() => {
-          setSideFilter("ALL");
           setDealFilter("ALL");
           setPropTypes(new Set());
           setRegionFilter("ALL");
@@ -655,7 +653,6 @@ function SearchBar({
 }
 
 function Tabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
-  // Phase 1: 월세/전세만 활성. 매매는 Phase 2 예정.
   return (
     <div className="flex border-b items-center gap-2">
       <button
@@ -666,19 +663,14 @@ function Tabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
             : "border-transparent text-neutral-500"
         }`}
       >
-        🔑 월세 / 전세 / 단기 / 전대
+        🔑 월세 · 전세 · 단기 · 전대
       </button>
-      <span className="text-xs text-neutral-400 ml-2">
-        매매는 Phase 2 예정
-      </span>
     </div>
   );
 }
 
 function Filters({
   tab,
-  sideFilter,
-  setSideFilter,
   dealFilter,
   setDealFilter,
   propTypes,
@@ -697,8 +689,6 @@ function Filters({
   onReset,
 }: {
   tab: Tab;
-  sideFilter: SideFilter;
-  setSideFilter: (s: SideFilter) => void;
   dealFilter: DealFilter;
   setDealFilter: (s: DealFilter) => void;
   propTypes: Set<string>;
@@ -755,17 +745,7 @@ function Filters({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm pt-2 border-t">
-        <FilterGroup label="등록">
-          {(["ALL", "SELL", "BUY"] as const).map((v) => (
-            <FilterBtn key={v} active={sideFilter === v} onClick={() => setSideFilter(v)}>
-              {v === "ALL"
-                ? "전체"
-                : tab === "TRADE"
-                ? v === "SELL" ? "매도" : "매수"
-                : v === "SELL" ? "임대" : "임차"}
-            </FilterBtn>
-          ))}
-        </FilterGroup>
+        {/* Phase 1: 등록 필터 숨김 (임대만 노출) */}
         {tab === "RENT" && (
           <FilterGroup label="유형">
             {(["ALL", "JEONSE", "MONTHLY"] as const).map((v) => (
