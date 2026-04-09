@@ -41,15 +41,25 @@ export default async function DealPage({
   }
 
   const contractData = deal.contractData ? JSON.parse(deal.contractData) : {};
+  const bothSigned = !!contractData.buyerSignature && !!contractData.sellerSignature;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-        <h1 className="text-xl font-bold text-green-800">🎉 딜이 성사되었습니다</h1>
-        <p className="text-sm text-green-700 mt-1">
-          이제 양측이 계약 정보를 확인하고 실제 계약으로 진행할 수 있습니다.
-        </p>
-      </div>
+      {bothSigned ? (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <h1 className="text-xl font-bold text-green-800">🎉 계약이 체결되었습니다</h1>
+          <p className="text-sm text-green-700 mt-1">
+            양 당사자의 전자서명이 모두 완료되어 계약이 성립되었습니다.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h1 className="text-xl font-bold text-blue-800">📝 계약 진행 중</h1>
+          <p className="text-sm text-blue-700 mt-1">
+            계약서를 검토하고 서명해주세요. 양측 서명이 완료되면 계약이 체결됩니다.
+          </p>
+        </div>
+      )}
 
       <section className="border rounded-lg bg-white p-4 mb-6">
         <h2 className="font-bold mb-3">매물 정보</h2>
