@@ -67,7 +67,12 @@ export default async function DealPage({
           {deal.listing.address} {deal.listing.addressDetail}
         </p>
         <p className="mt-2 text-lg font-bold text-pink-600">
-          합의 가격: {formatPrice(deal.agreedPrice)}
+          {deal.listing.dealType === "MONTHLY"
+            ? "월세"
+            : deal.listing.dealType === "JEONSE"
+            ? "전세금"
+            : "합의 가격"}
+          : {formatPrice(deal.agreedPrice)}
         </p>
       </section>
 
