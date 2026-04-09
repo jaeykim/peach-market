@@ -23,8 +23,8 @@ export default function LoginPage() {
       setError(j.error || "로그인 실패");
       return;
     }
-    router.push("/");
-    router.refresh();
+    // 전체 페이지 리로드로 HeaderNav 상태까지 새로 가져옴
+    window.location.href = "/";
   }
 
   return (

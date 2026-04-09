@@ -21,8 +21,7 @@ export default function SignupPage() {
       setError(typeof j.error === "string" ? j.error : "가입 실패");
       return;
     }
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   return (

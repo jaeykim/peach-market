@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type Notif = {
   id: string;
@@ -16,6 +16,7 @@ type Me = { id: string; name: string; email: string; phone: string | null } | nu
 
 export default function HeaderNav() {
   const router = useRouter();
+  const pathname = usePathname();
   const [me, setMe] = useState<Me>(null);
   const [unread, setUnread] = useState(0);
   const [notifs, setNotifs] = useState<Notif[]>([]);
@@ -53,7 +54,8 @@ export default function HeaderNav() {
     load();
     const t = setInterval(load, 15000);
     return () => clearInterval(t);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
