@@ -7,6 +7,8 @@ type Listing = {
   id: string;
   side: string;
   isSublet: boolean;
+  isShortTerm: boolean;
+  rentalMonths: number | null;
   title: string;
   address: string;
   lat: number;
@@ -27,25 +29,33 @@ function sideLabel(dealType: string, side: string, isSublet: boolean): string {
   return side === "SELL" ? "임대" : "임차";
 }
 
+// Phase 1: 학생·대학가 월세 위주. 주거용만 노출.
 const PROPERTY_TYPES = [
-  { value: "APT", label: "아파트" },
+  { value: "STUDIO", label: "원룸/투룸" },
   { value: "OFFICETEL", label: "오피스텔" },
   { value: "VILLA", label: "빌라/연립" },
   { value: "HOUSE", label: "단독주택" },
   { value: "MULTI_FAMILY", label: "다가구주택" },
-  { value: "STUDIO", label: "원룸/투룸" },
-  { value: "SHOP", label: "상가" },
-  { value: "OFFICE", label: "사무실" },
-  { value: "KNOWLEDGE", label: "지식산업센터" },
-  { value: "BUILDING", label: "건물(꼬마빌딩)" },
-  { value: "FACTORY", label: "공장" },
-  { value: "WAREHOUSE", label: "창고" },
-  { value: "LODGING", label: "숙박시설" },
-  { value: "LAND", label: "토지" },
 ] as const;
 
+const ALL_PROP_LABELS: Record<string, string> = {
+  STUDIO: "원룸/투룸",
+  OFFICETEL: "오피스텔",
+  VILLA: "빌라/연립",
+  HOUSE: "단독주택",
+  MULTI_FAMILY: "다가구주택",
+  APT: "아파트",
+  SHOP: "상가",
+  OFFICE: "사무실",
+  KNOWLEDGE: "지식산업센터",
+  BUILDING: "건물",
+  FACTORY: "공장",
+  WAREHOUSE: "창고",
+  LODGING: "숙박시설",
+  LAND: "토지",
+};
 function propTypeLabel(t: string): string {
-  return PROPERTY_TYPES.find((p) => p.value === t)?.label ?? t;
+  return ALL_PROP_LABELS[t] ?? t;
 }
 
 type Tab = "TRADE" | "RENT"; // TRADE=매매, RENT=월세/전세
@@ -82,7 +92,7 @@ export default function MapView({
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const [tab, setTab] = useState<Tab>("TRADE");
+  const [tab, setTab] = useState<Tab>("RENT");
   const [sideFilter, setSideFilter] = useState<SideFilter>("ALL");
   const [dealFilter, setDealFilter] = useState<DealFilter>("ALL"); // 임대 탭에서만 사용 (전체/전세/월세)
   const [regionFilter, setRegionFilter] = useState<string>("ALL");
@@ -432,6 +442,11 @@ export default function MapView({
                             {sideLabel(l.dealType, l.side, l.isSublet)}
                           </Tag>
                           <Tag color="neutral">{dealLabel(l.dealType)}</Tag>
+                          {l.isShortTerm && (
+                            <Tag color="orange">
+                              ⏳ 단기{l.rentalMonths ? ` ${l.rentalMonths}개월` : ""}
+                            </Tag>
+                          )}
                           <Tag color="neutral">{propTypeLabel(l.propertyType)}</Tag>
                           {l.negotiationCount > 0 && (
                             <Tag color="orange">🤝 {l.negotiationCount}</Tag>
@@ -640,21 +655,22 @@ function SearchBar({
 }
 
 function Tabs({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+  // Phase 1: 월세/전세만 활성. 매매는 Phase 2 예정.
   return (
-    <div className="flex border-b">
-      {(["TRADE", "RENT"] as const).map((t) => (
-        <button
-          key={t}
-          onClick={() => setTab(t)}
-          className={`px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px ${
-            tab === t
-              ? "border-pink-600 text-pink-600"
-              : "border-transparent text-neutral-500 hover:text-neutral-800"
-          }`}
-        >
-          {t === "TRADE" ? "🏠 부동산 거래 (매매)" : "🔑 월세 / 전세"}
-        </button>
-      ))}
+    <div className="flex border-b items-center gap-2">
+      <button
+        onClick={() => setTab("RENT")}
+        className={`px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px ${
+          tab === "RENT"
+            ? "border-pink-600 text-pink-600"
+            : "border-transparent text-neutral-500"
+        }`}
+      >
+        🔑 월세 / 전세 / 단기 / 전대
+      </button>
+      <span className="text-xs text-neutral-400 ml-2">
+        매매는 Phase 2 예정
+      </span>
     </div>
   );
 }

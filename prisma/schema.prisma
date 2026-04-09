@@ -47,6 +47,10 @@ model Listing {
   side        String   // "SELL" | "BUY"
   // 임대 매물에서 전대(sublet) 여부
   isSublet    Boolean  @default(false)
+  // 단기임대 여부 (방학 단기, 인턴십 등)
+  isShortTerm Boolean  @default(false)
+  // 임대 기간 (개월 수, 단기임대일 때 주로 사용)
+  rentalMonths Int?
 
   // 위치
   address     String   // 도로명/지번 주소

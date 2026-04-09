@@ -51,7 +51,7 @@ export default async function ListingDetailPage({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span
           className={`text-xs font-bold px-2 py-0.5 rounded ${
             listing.side === "SELL" ? "bg-pink-100 text-pink-700" : "bg-blue-100 text-blue-700"
@@ -59,6 +59,11 @@ export default async function ListingDetailPage({
         >
           {sideLongLabel(listing.dealType, listing.side, listing.isSublet)}
         </span>
+        {listing.isShortTerm && (
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
+            ⏳ 단기 {listing.rentalMonths ? `${listing.rentalMonths}개월` : ""}
+          </span>
+        )}
         <span className="text-xs text-neutral-500">
           {listing.status === "OPEN" ? "협상 대기" : listing.status === "IN_NEGOTIATION" ? "협상 중" : "마감"}
         </span>

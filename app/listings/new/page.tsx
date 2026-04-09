@@ -5,21 +5,13 @@ import { useRouter } from "next/navigation";
 import AddressPicker, { SelectedAddress } from "@/components/AddressPicker";
 import PhotoUploader from "@/components/PhotoUploader";
 
+// Phase 1: 대학가 주거용만
 const PROPERTY_TYPES = [
-  { value: "APT", label: "아파트" },
+  { value: "STUDIO", label: "원룸/투룸" },
   { value: "OFFICETEL", label: "오피스텔" },
   { value: "VILLA", label: "빌라/연립" },
   { value: "HOUSE", label: "단독주택" },
   { value: "MULTI_FAMILY", label: "다가구주택" },
-  { value: "STUDIO", label: "원룸/투룸" },
-  { value: "SHOP", label: "상가" },
-  { value: "OFFICE", label: "사무실" },
-  { value: "KNOWLEDGE", label: "지식산업센터" },
-  { value: "BUILDING", label: "건물(꼬마빌딩)" },
-  { value: "FACTORY", label: "공장" },
-  { value: "WAREHOUSE", label: "창고" },
-  { value: "LODGING", label: "숙박시설" },
-  { value: "LAND", label: "토지" },
 ];
 
 export default function NewListingPage({
@@ -30,11 +22,13 @@ export default function NewListingPage({
 
   const [side, setSide] = useState<"SELL" | "BUY">("SELL");
   const [isSublet, setIsSublet] = useState(false);
+  const [isShortTerm, setIsShortTerm] = useState(false);
+  const [rentalMonths, setRentalMonths] = useState("");
   const [address, setAddress] = useState<SelectedAddress | null>(null);
   const [addressDetail, setAddressDetail] = useState("");
   const [title, setTitle] = useState("");
-  const [propertyType, setPropertyType] = useState("APT");
-  const [dealType, setDealType] = useState<"SALE" | "JEONSE" | "MONTHLY">("SALE");
+  const [propertyType, setPropertyType] = useState("STUDIO");
+  const [dealType, setDealType] = useState<"SALE" | "JEONSE" | "MONTHLY">("MONTHLY");
   const [askingPrice, setAskingPrice] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
@@ -110,6 +104,8 @@ export default function NewListingPage({
       const body = {
         side,
         isSublet,
+        isShortTerm,
+        rentalMonths: isShortTerm && rentalMonths ? parseInt(rentalMonths, 10) : undefined,
         title,
         address: address.address,
         addressDetail: addressDetail || undefined,
@@ -160,73 +156,48 @@ export default function NewListingPage({
       <form onSubmit={submit} className="space-y-6">
         {/* 1. 등록 유형 */}
         <Section title="① 등록 유형" subtitle="어떤 거래를 하시나요?">
-          {dealType === "SALE" ? (
-            <div className="grid grid-cols-2 gap-3">
-              <BigOption
-                active={side === "SELL" && !isSublet}
-                activeColor="pink"
-                onClick={() => {
-                  setSide("SELL");
-                  setIsSublet(false);
-                }}
-                label="🏠 매도"
-                desc="내 집을 팝니다"
-              />
-              <BigOption
-                active={side === "BUY" && !isSublet}
-                activeColor="blue"
-                onClick={() => {
-                  setSide("BUY");
-                  setIsSublet(false);
-                }}
-                label="🔍 매수"
-                desc="이런 집을 찾습니다"
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <BigOption
-                active={side === "SELL" && !isSublet}
-                activeColor="pink"
-                onClick={() => {
-                  setSide("SELL");
-                  setIsSublet(false);
-                }}
-                label="🏠 임대"
-                desc="내 집을 빌려줍니다"
-              />
-              <BigOption
-                active={side === "BUY" && !isSublet}
-                activeColor="blue"
-                onClick={() => {
-                  setSide("BUY");
-                  setIsSublet(false);
-                }}
-                label="🔍 임차"
-                desc="살 집을 구합니다"
-              />
-              <BigOption
-                active={side === "SELL" && isSublet}
-                activeColor="pink"
-                onClick={() => {
-                  setSide("SELL");
-                  setIsSublet(true);
-                }}
-                label="↪️ 전대"
-                desc="임차 중인 집을 다시 빌려줍니다"
-              />
-              <BigOption
-                active={side === "BUY" && isSublet}
-                activeColor="blue"
-                onClick={() => {
-                  setSide("BUY");
-                  setIsSublet(true);
-                }}
-                label="↩️ 전차"
-                desc="전대 매물을 찾습니다"
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <BigOption
+              active={side === "SELL" && !isSublet}
+              activeColor="pink"
+              onClick={() => {
+                setSide("SELL");
+                setIsSublet(false);
+              }}
+              label="🏠 임대"
+              desc="내 방을 빌려줍니다"
+            />
+            <BigOption
+              active={side === "BUY" && !isSublet}
+              activeColor="blue"
+              onClick={() => {
+                setSide("BUY");
+                setIsSublet(false);
+              }}
+              label="🔍 임차"
+              desc="살 방을 구합니다"
+            />
+            <BigOption
+              active={side === "SELL" && isSublet}
+              activeColor="pink"
+              onClick={() => {
+                setSide("SELL");
+                setIsSublet(true);
+              }}
+              label="↪️ 전대"
+              desc="임차 중인 집을 다시 빌려줍니다"
+            />
+            <BigOption
+              active={side === "BUY" && isSublet}
+              activeColor="blue"
+              onClick={() => {
+                setSide("BUY");
+                setIsSublet(true);
+              }}
+              label="↩️ 전차"
+              desc="전대 매물을 찾습니다"
+            />
+          </div>
         </Section>
 
         {/* 2. 위치 */}
@@ -264,8 +235,8 @@ export default function NewListingPage({
               </select>
             </Field>
             <Field label="거래 유형">
-              <div className="grid grid-cols-3 gap-1">
-                {(["SALE", "JEONSE", "MONTHLY"] as const).map((v) => (
+              <div className="grid grid-cols-2 gap-1">
+                {(["MONTHLY", "JEONSE"] as const).map((v) => (
                   <button
                     key={v}
                     type="button"
@@ -276,11 +247,44 @@ export default function NewListingPage({
                         : "bg-white"
                     }`}
                   >
-                    {v === "SALE" ? "매매" : v === "JEONSE" ? "전세" : "월세"}
+                    {v === "JEONSE" ? "전세" : "월세"}
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] text-neutral-400 mt-1">
+                매매는 Phase 2 예정
+              </p>
             </Field>
+          </div>
+
+          <div className="mt-3 border-t pt-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isShortTerm}
+                onChange={(e) => setIsShortTerm(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-semibold">⏳ 단기임대</span>
+              <span className="text-xs text-neutral-500">
+                방학·교환학생·인턴십 등 단기 목적
+              </span>
+            </label>
+            {isShortTerm && (
+              <div className="mt-2 ml-6">
+                <Field label="임대 기간 (개월)">
+                  <input
+                    type="number"
+                    className="input w-32"
+                    placeholder="3"
+                    value={rentalMonths}
+                    onChange={(e) => setRentalMonths(e.target.value)}
+                    min={1}
+                    max={24}
+                  />
+                </Field>
+              </div>
+            )}
           </div>
         </Section>
 

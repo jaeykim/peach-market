@@ -78,10 +78,8 @@ export default function HeaderNav() {
 
   return (
     <nav className="flex items-center gap-4 text-sm">
-      <Link href="/map" className="hover:text-pink-600">지도</Link>
-      <Link href="/listings/new" className="hover:text-pink-600">매물 등록</Link>
-      <Link href="/insights" className="hover:text-pink-600">인사이트</Link>
-      <Link href="/brokers" className="hover:text-blue-600 text-blue-600 font-semibold">중개사 파트너</Link>
+      <Link href="/map" className="hover:text-pink-600">방 찾기</Link>
+      <Link href="/listings/new" className="hover:text-pink-600">방 올리기</Link>
       {me && <Link href="/me" className="hover:text-pink-600">내 활동</Link>}
       {!me ? (
         <Link href="/login" className="hover:text-pink-600">로그인</Link>

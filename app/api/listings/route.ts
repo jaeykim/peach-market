@@ -6,6 +6,8 @@ import { getCurrentUser } from "@/lib/auth";
 const CreateBody = z.object({
   side: z.enum(["SELL", "BUY"]),
   isSublet: z.boolean().optional(),
+  isShortTerm: z.boolean().optional(),
+  rentalMonths: z.number().int().positive().optional(),
   address: z.string().min(1),
   addressDetail: z.string().optional(),
   lat: z.number(),
