@@ -150,6 +150,25 @@ model Deal {
   updatedAt   DateTime @updatedAt
 
   chatMessages ChatMessage[]
+  payments     Payment[]
+}
+
+// 카드결제 기록 (월세·단기임대)
+model Payment {
+  id           String   @id @default(cuid())
+  dealId       String
+  deal         Deal     @relation(fields: [dealId], references: [id])
+  amount       Int      // 만원
+  type         String   // MONTHLY_RENT / SHORT_TERM_FULL / DEPOSIT
+  method       String   @default("CARD") // CARD / TRANSFER
+  status       String   @default("PAID") // PAID / FAILED / REFUNDED
+  billingMonth String?  // 월세의 경우 "2026-05" 같은 기준월
+  cardLast4    String?  // 카드 뒤 4자리 (데모: **** 1234)
+  cardBrand    String?  // 현대·신한·삼성 등
+  paidAt       DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([dealId, paidAt])
 }
 
 // 알림

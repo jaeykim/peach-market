@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import RotatingTypeCards from "@/components/RotatingTypeCards";
 
 export const dynamic = "force-dynamic";
 
@@ -103,33 +104,100 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* 3 types */}
+      {/* 3 types (rotating highlight) */}
       <section className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-center">
             어떤 계약이든, 무료로
           </h2>
-          <div className="grid md:grid-cols-3 gap-4 mt-10">
-            <TypeCard
-              icon="🗓️"
-              title="월세"
-              desc="가장 일반적인 월세 계약. 보증금과 월세, 기간을 직접 합의하세요."
-              tags={["표준 계약", "보증금 에스크로"]}
-            />
-            <TypeCard
-              icon="⏳"
-              title="단기임대"
-              desc="몇 달만 머물고 싶을 때. 방학·교환·인턴·워케이션 등."
-              tags={["3~6개월", "유연한 기간"]}
-              highlight
-            />
-            <TypeCard
-              icon="↪️"
-              title="전대"
-              desc="남은 계약을 이어받을 사람을 찾을 때. 위약금 없이 자연스럽게."
-              tags={["잔여 기간", "즉시 입주"]}
-            />
+          <p className="text-center text-neutral-500 text-sm mt-2">
+            월세 · 단기임대 · 전대 — 모두 피치마켓에서
+          </p>
+          <RotatingTypeCards />
+        </div>
+      </section>
+
+      {/* Differentiation */}
+      <section className="py-16 bg-gradient-to-br from-pink-50 to-white">
+        <div className="max-w-5xl mx-auto px-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center">
+            다른 단기임대 플랫폼은요?
+          </h2>
+          <p className="text-center text-neutral-500 text-sm mt-2">
+            계약서 없이 몇 백만원을 주고받고 있으세요?
+          </p>
+
+          <div className="mt-10 grid md:grid-cols-2 gap-4">
+            <div className="border-2 border-neutral-200 rounded-xl p-6 bg-white opacity-80">
+              <div className="text-xs font-bold text-neutral-500 mb-2">다른 단기임대 서비스</div>
+              <ul className="space-y-2 text-sm text-neutral-700">
+                <li className="flex gap-2">
+                  <span className="text-red-500">✕</span>
+                  <span>수수료 10~20% (한 달치 월세)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-red-500">✕</span>
+                  <span>정식 임대차 계약서 미작성</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-red-500">✕</span>
+                  <span>보증금 예치 보호 없음</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-red-500">✕</span>
+                  <span>분쟁 시 법적 근거 부족</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-red-500">✕</span>
+                  <span>집주인 실명·등기부 검증 없음</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-2 border-pink-500 rounded-xl p-6 bg-white shadow-lg">
+              <div className="text-xs font-bold text-pink-600 mb-2">🍑 피치마켓</div>
+              <ul className="space-y-2 text-sm text-neutral-800">
+                <li className="flex gap-2">
+                  <span className="text-pink-600">✓</span>
+                  <span>
+                    <strong>수수료 0원</strong> · 가입부터 계약까지 전부 무료
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-pink-600">✓</span>
+                  <span>
+                    <strong>국토부 표준 임대차 계약서</strong> 자동 작성
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-pink-600">✓</span>
+                  <span>
+                    <strong>보증금 에스크로</strong> 안전 보관
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-pink-600">✓</span>
+                  <span>분쟁 시 계약서 + 전자서명 효력</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-pink-600">✓</span>
+                  <span>
+                    <strong>등기부·권리관계 자동 검증</strong>
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-pink-600">✓</span>
+                  <span>
+                    <strong>월세·단기임대 카드 결제</strong> 지원
+                  </span>
+                </li>
+              </ul>
+            </div>
           </div>
+
+          <p className="text-center text-xs text-neutral-500 mt-6">
+            계약서 한 장으로, 같은 돈이라도 완전히 다른 안전함.
+          </p>
         </div>
       </section>
 
@@ -261,38 +329,3 @@ function DesireCard({
   );
 }
 
-function TypeCard({
-  icon,
-  title,
-  desc,
-  tags,
-  highlight,
-}: {
-  icon: string;
-  title: string;
-  desc: string;
-  tags: string[];
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`border rounded-xl p-6 bg-white ${
-        highlight ? "border-pink-500 border-2 shadow-lg" : ""
-      }`}
-    >
-      <div className="text-3xl mb-2">{icon}</div>
-      <h3 className="font-bold text-lg">{title}</h3>
-      <p className="text-sm text-neutral-600 mt-2">{desc}</p>
-      <div className="mt-3 flex flex-wrap gap-1">
-        {tags.map((t) => (
-          <span
-            key={t}
-            className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full"
-          >
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}

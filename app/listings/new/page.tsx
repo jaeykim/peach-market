@@ -278,7 +278,7 @@ export default function NewListingPage({
                 onChange={(e) => setAskingPrice(e.target.value)}
               />
               <p className="text-[11px] text-neutral-500 mt-0.5">
-                Phase 1은 고정가 거래입니다. 이 금액으로 신청이 접수됩니다.
+                이 금액으로 신청이 접수되고 계약이 진행됩니다.
               </p>
             </Field>
 

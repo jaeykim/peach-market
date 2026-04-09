@@ -209,8 +209,8 @@ export default function ApplicationPanel({
       {!isOwner && !myApp && (
         <form onSubmit={submit} className="space-y-2 pt-3 border-t">
           <div className="bg-pink-50 border border-pink-200 rounded p-2 text-xs">
-            신청 금액은 <strong>{askingPrice.toLocaleString()}만원</strong>(등록가 그대로)
-            으로 고정됩니다. Phase 1에서는 가격 협상 없이 고정가로만 진행됩니다.
+            등록된 금액 <strong>{askingPrice.toLocaleString()}만원</strong> 그대로
+            신청됩니다.
           </div>
           <textarea
             placeholder="집주인에게 남길 메시지 (선택) — 입주 가능 시점, 직업 등"

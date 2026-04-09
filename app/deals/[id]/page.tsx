@@ -5,6 +5,7 @@ import DealContractForm from "@/components/DealContractForm";
 import DealWorkflow from "@/components/DealWorkflow";
 import DealChat from "@/components/DealChat";
 import EarnestMoneyCard from "@/components/EarnestMoneyCard";
+import PaymentCard from "@/components/PaymentCard";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,21 @@ export default async function DealPage({
           initial={contractData}
         />
       </section>
+
+      {deal.listing.dealType !== "SALE" && (
+        <div className="mb-6">
+          <PaymentCard
+            dealId={deal.id}
+            isBuyer={deal.buyerId === user.id}
+            isSeller={deal.sellerId === user.id}
+            dealType={deal.listing.dealType}
+            isShortTerm={deal.listing.isShortTerm}
+            rentalMonths={deal.listing.rentalMonths}
+            monthlyAmount={deal.agreedPrice}
+            depositAmount={deal.listing.deposit}
+          />
+        </div>
+      )}
 
       <div className="mb-6">
         <EarnestMoneyCard
