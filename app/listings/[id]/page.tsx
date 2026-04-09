@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import ApplicationPanel from "@/components/ApplicationPanel";
+import ApplyButton from "@/components/ApplyButton";
 import RegistryViewer from "@/components/RegistryViewer";
 import FavoriteButton from "@/components/FavoriteButton";
 import MatchRecommendations from "@/components/MatchRecommendations";
@@ -135,11 +135,14 @@ export default async function ListingDetailPage({
               {listing.description}
             </div>
           )}
-          <ApplicationPanel
+          <ApplyButton
             listingId={listing.id}
-            askingPrice={listing.askingPrice}
+            listingTitle={listing.title}
+            monthlyAmount={listing.askingPrice}
+            deposit={listing.deposit}
+            isShortTerm={listing.isShortTerm}
+            rentalMonths={listing.rentalMonths}
             isOwner={isOwner}
-            currentUserId={user?.id ?? null}
             isLoggedIn={!!user}
             isClosed={listing.status === "CLOSED"}
           />
