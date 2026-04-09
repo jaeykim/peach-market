@@ -59,20 +59,34 @@ export default async function MePage() {
           <ul className="divide-y">
             {myListings.map((l) => (
               <li key={l.id} className="py-2">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 flex-wrap">
                   <Link href={`/listings/${l.id}`} className="hover:text-pink-600 flex-1 min-w-0">
                     <span className="text-xs font-bold mr-2">
                       [{sideLabel(l.dealType, l.side, l.isSublet)}]
                     </span>
                     {l.title}
                     <span className="text-xs text-neutral-500 ml-2">
-                      ({l.status} · 조회 {l.viewCount}회)
+                      (
+                      {l.status === "PAUSED"
+                        ? "⏸ 일시중지"
+                        : l.status === "CLOSED"
+                        ? "마감"
+                        : l.status}
+                      {" · "}조회 {l.viewCount}회)
                     </span>
                   </Link>
-                  <VerifyOwnershipButton
-                    listingId={l.id}
-                    initialVerified={!!l.ownershipVerifiedAt}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/listings/${l.id}/edit`}
+                      className="text-[11px] bg-neutral-200 text-neutral-700 px-2 py-1 rounded font-semibold"
+                    >
+                      ✏️ 수정
+                    </Link>
+                    <VerifyOwnershipButton
+                      listingId={l.id}
+                      initialVerified={!!l.ownershipVerifiedAt}
+                    />
+                  </div>
                 </div>
               </li>
             ))}

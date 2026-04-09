@@ -7,6 +7,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import MatchRecommendations from "@/components/MatchRecommendations";
 import PhotoGallery from "@/components/PhotoGallery";
 import ReportButton from "@/components/ReportButton";
+import { getUserStats } from "@/lib/userStats";
 import { sideLongLabel, priceRangeLabel } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,8 @@ export default async function ListingDetailPage({
         where: { userId_listingId: { userId: user.id, listingId: id } },
       }))
     : false;
+
+  const ownerStats = await getUserStats(listing.ownerId);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -137,7 +140,15 @@ export default async function ListingDetailPage({
           )}
           <Row
             label="등록자"
-            value={`${listing.owner.name}${listing.owner.verifiedAt ? " ✅ 인증" : ""}`}
+            value={`${listing.owner.name}${listing.owner.verifiedAt ? " ✅ 인증" : ""}${
+              ownerStats.ratingAvg
+                ? ` · ★${ownerStats.ratingAvg.toFixed(1)} (${ownerStats.reviewCount})`
+                : ""
+            }${
+              ownerStats.completedDealCount > 0
+                ? ` · 거래 ${ownerStats.completedDealCount}회`
+                : ""
+            }`}
           />
         </div>
 

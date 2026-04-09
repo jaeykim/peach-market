@@ -6,7 +6,7 @@ export const revalidate = 0;
 
 export default async function MapPage() {
   const rows = await prisma.listing.findMany({
-    where: { status: { not: "CLOSED" } },
+    where: { status: { in: ["OPEN", "IN_NEGOTIATION"] } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

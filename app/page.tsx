@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
   const listingCount = await prisma.listing.count({
-    where: { status: { not: "CLOSED" }, dealType: "MONTHLY" },
+    where: { status: { in: ["OPEN", "IN_NEGOTIATION"] }, dealType: "MONTHLY" },
   });
 
   return (
@@ -320,20 +320,32 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <footer className="bg-neutral-900 text-neutral-400 text-xs py-8">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div>🍑 피치마켓 © 2026 — 수수료 없는 월세 · 단기 · 전대</div>
-          <div className="flex gap-3">
-            <Link href="/map" className="hover:text-white">
-              방 찾기
-            </Link>
-            <Link href="/listings/new" className="hover:text-white">
-              방 올리기
-            </Link>
-            <Link href="/login" className="hover:text-white">
-              로그인
-            </Link>
+      <footer className="bg-neutral-900 text-neutral-400 text-xs py-10">
+        <div className="max-w-5xl mx-auto px-4 space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div>
+              <div className="text-base font-bold text-white mb-1">🍑 피치마켓</div>
+              <div>수수료 없는 월세 · 단기 · 전대</div>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <Link href="/map" className="hover:text-white">방 찾기</Link>
+              <Link href="/listings/new" className="hover:text-white">방 올리기</Link>
+              <Link href="/login" className="hover:text-white">로그인</Link>
+            </div>
           </div>
+          <div className="border-t border-neutral-700 pt-4 flex flex-col sm:flex-row justify-between gap-2">
+            <div className="text-[11px] leading-relaxed">
+              상호: 피치마켓 · 대표: (주)피치마켓 · 사업자등록번호: 000-00-00000
+              <br />
+              이메일: support@peach.market · 주소: 서울특별시 강남구 (가상)
+            </div>
+            <div className="flex gap-3">
+              <Link href="/terms" className="hover:text-white">이용약관</Link>
+              <Link href="/privacy" className="hover:text-white">개인정보처리방침</Link>
+              <Link href="/refund" className="hover:text-white">환불 정책</Link>
+            </div>
+          </div>
+          <div className="text-[10px] text-neutral-500">© 2026 피치마켓. 데모 서비스입니다.</div>
         </div>
       </footer>
     </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import HeaderNav from "@/components/HeaderNav";
+import Toaster from "@/components/Toaster";
 
 export const metadata: Metadata = {
   title: "피치마켓 - 수수료 없는 월세 · 단기 · 전대",
@@ -24,6 +25,7 @@ export default function RootLayout({
           </div>
         </header>
         <main>{children}</main>
+        <Toaster />
       </body>
     </html>
   );
