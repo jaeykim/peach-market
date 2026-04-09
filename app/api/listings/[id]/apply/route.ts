@@ -6,6 +6,8 @@ import { notify } from "@/lib/notify";
 
 const Body = z.object({
   earnestMoney: z.number().int().nonnegative(),
+  startDate: z.string(), // YYYY-MM-DD
+  endDate: z.string(),
 });
 
 // Phase 1 임차 신청 흐름:
@@ -32,6 +34,40 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "본인 매물에는 신청할 수 없습니다." }, { status: 400 });
   }
 
+  // 기간 검증
+  const start = new Date(parsed.data.startDate);
+  const end = new Date(parsed.data.endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return NextResponse.json({ error: "잘못된 날짜입니다." }, { status: 400 });
+  }
+  const daysDiff = Math.round((end.getTime() - start.getTime()) / 86400000);
+  // 단기임대: 최소 7일 / 일반 월세: 최소 365일 (1년)
+  const minDays = listing.isShortTerm ? 7 : 365;
+  if (daysDiff < minDays) {
+    const label = listing.isShortTerm ? "7일" : "1년 (365일)";
+    return NextResponse.json(
+      { error: `임대 기간은 최소 ${label} 이상이어야 합니다.` },
+      { status: 400 },
+    );
+  }
+
+  // 겹침 검사 (이미 예약된 기간과 겹치는지)
+  const overlapping = await prisma.deal.findFirst({
+    where: {
+      listingId: id,
+      status: { not: "CANCELLED" },
+      landlordApprovalStatus: { not: "REJECTED" },
+      rentalStartDate: { lt: end },
+      rentalEndDate: { gt: start },
+    },
+  });
+  if (overlapping) {
+    return NextResponse.json(
+      { error: "이미 예약된 기간과 겹칩니다. 다른 날짜를 선택해주세요." },
+      { status: 409 },
+    );
+  }
+
   // 이미 진행 중인 이 사용자의 Deal이 있으면 재사용
   const existing = await prisma.deal.findFirst({
     where: {
@@ -51,6 +87,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       buyerId: user.id,
       sellerId: listing.ownerId,
       agreedPrice: listing.askingPrice,
+      rentalStartDate: start,
+      rentalEndDate: end,
       // 가계약금 에스크로 즉시 보관 처리
       earnestMoney: parsed.data.earnestMoney,
       earnestMoneyStatus: "CONFIRMED",

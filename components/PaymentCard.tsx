@@ -39,7 +39,8 @@ export default function PaymentCard({
   isSeller,
   dealType,
   isShortTerm,
-  rentalMonths,
+  rentalStartDate,
+  rentalEndDate,
   monthlyAmount, // 만원
   depositAmount, // 만원
 }: {
@@ -48,7 +49,8 @@ export default function PaymentCard({
   isSeller: boolean;
   dealType: string;
   isShortTerm: boolean;
-  rentalMonths: number | null;
+  rentalStartDate: string | null;
+  rentalEndDate: string | null;
   monthlyAmount: number;
   depositAmount: number | null;
 }) {
@@ -58,9 +60,20 @@ export default function PaymentCard({
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
 
-  // 단기임대면 전체 금액 일시불, 아니면 월세 매달
-  const isShortTermRental = isShortTerm && rentalMonths;
-  const fullAmount = isShortTermRental ? monthlyAmount * rentalMonths! : monthlyAmount;
+  // 단기임대면 전체 금액 일시불 (임대 기간 일수 × 일할 계산)
+  // 일반 월세는 매월
+  const days =
+    rentalStartDate && rentalEndDate
+      ? Math.round(
+          (new Date(rentalEndDate).getTime() -
+            new Date(rentalStartDate).getTime()) /
+            86400000,
+        ) + 1
+      : 0;
+  const isShortTermRental = isShortTerm && days > 0;
+  const fullAmount = isShortTermRental
+    ? Math.round((monthlyAmount * days) / 30)
+    : monthlyAmount;
 
   const [method, setMethod] = useState<"TRANSFER" | "CARD">("TRANSFER");
   const [cardNumber, setCardNumber] = useState("4000123412345678");
@@ -124,7 +137,7 @@ export default function PaymentCard({
           <h2 className="font-bold">🛡️ 결제 (피치마켓 에스크로)</h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             {isShortTermRental
-              ? `단기임대 ${rentalMonths}개월 전체 금액을 한 번에`
+              ? `단기임대 ${days}일 전체 금액을 한 번에`
               : "매달 월세 결제"}
             {" "}· 피치마켓이 안전하게 보관한 뒤 임대인에게 입금합니다.
           </p>
@@ -135,7 +148,7 @@ export default function PaymentCard({
         {isShortTermRental ? (
           <>
             <div className="flex justify-between">
-              <span className="text-neutral-500">월세 {monthlyAmount.toLocaleString()}만원 × {rentalMonths}개월</span>
+              <span className="text-neutral-500">{days}일 임대 (월 {monthlyAmount.toLocaleString()}만원 일할)</span>
               <span className="font-semibold">{fullAmount.toLocaleString()}만원</span>
             </div>
             {depositAmount && (

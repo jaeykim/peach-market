@@ -143,6 +143,10 @@ model Deal {
 
   agreedPrice Int      // 단위: 만원
 
+  // 임대 기간 (캘린더에서 선택)
+  rentalStartDate DateTime?
+  rentalEndDate   DateTime?
+
   // 가계약금 (단위: 만원)
   earnestMoney            Int?
   earnestMoneyStatus      String?  // PENDING / PAID / CONFIRMED / REFUNDED

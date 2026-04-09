@@ -126,6 +126,8 @@ export default async function DealPage({
           earnestMoney={deal.earnestMoney}
           buyerName={deal.buyer.name}
           rejectReason={deal.landlordRejectReason}
+          rentalStartDate={deal.rentalStartDate?.toISOString().slice(0, 10) ?? null}
+          rentalEndDate={deal.rentalEndDate?.toISOString().slice(0, 10) ?? null}
         />
       </div>
 
@@ -151,7 +153,8 @@ export default async function DealPage({
             isSeller={isSeller}
             dealType={deal.listing.dealType}
             isShortTerm={deal.listing.isShortTerm}
-            rentalMonths={deal.listing.rentalMonths}
+            rentalStartDate={deal.rentalStartDate?.toISOString().slice(0, 10) ?? null}
+            rentalEndDate={deal.rentalEndDate?.toISOString().slice(0, 10) ?? null}
             monthlyAmount={deal.agreedPrice}
             depositAmount={deal.listing.deposit}
           />

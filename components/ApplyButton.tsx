@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import RentalCalendar from "./RentalCalendar";
 
 export default function ApplyButton({
   listingId,
@@ -30,6 +31,8 @@ export default function ApplyButton({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
 
   // 가계약금 기본값: 월세의 50% 또는 10만원 (최소)
   const defaultEarnest = useMemo(() => {
@@ -37,14 +40,29 @@ export default function ApplyButton({
   }, [monthlyAmount]);
   const [earnestMoney, setEarnestMoney] = useState(String(defaultEarnest));
 
+  const days =
+    startDate && endDate
+      ? Math.round(
+          (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000,
+        ) + 1
+      : 0;
+
   async function apply() {
+    if (!startDate || !endDate) {
+      setError("임대 기간(시작일·종료일)을 선택해주세요.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
       const res = await fetch(`/api/listings/${listingId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ earnestMoney: parseInt(earnestMoney, 10) || 0 }),
+        body: JSON.stringify({
+          earnestMoney: parseInt(earnestMoney, 10) || 0,
+          startDate,
+          endDate,
+        }),
       });
       if (!res.ok) {
         const j = await res.json();
@@ -145,30 +163,62 @@ export default function ApplyButton({
           🔑 이 방 신청하기
         </button>
       ) : (
-        <div className="space-y-2 border-t pt-3">
-          <label className="text-xs font-semibold text-neutral-600 block">
-            가계약금 (만원)
-          </label>
-          <input
-            type="number"
-            value={earnestMoney}
-            onChange={(e) => setEarnestMoney(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-            min={0}
-          />
-          <p className="text-[11px] text-neutral-500">
-            추천: {defaultEarnest.toLocaleString()}만원 (월세의 50%)
-            <br />
-            거절 시 전액 환불됩니다.
-          </p>
+        <div className="space-y-3 border-t pt-3">
+          <div>
+            <label className="text-xs font-semibold text-neutral-600 block mb-1">
+              📅 임대 기간 선택 ({isShortTerm ? "최소 7일" : "최소 1년"})
+            </label>
+            <RentalCalendar
+              listingId={listingId}
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(s, e) => {
+                setStartDate(s);
+                setEndDate(e);
+              }}
+              minDays={isShortTerm ? 7 : 365}
+            />
+            <p className="text-[11px] text-neutral-500 mt-1">
+              {isShortTerm
+                ? "단기임대: 7일 이상 / 결제는 전체 금액 일시불입니다."
+                : "월세 계약: 1년 이상 / 매월 월세를 결제하는 방식입니다."}
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-neutral-600 block">
+              가계약금 (만원)
+            </label>
+            <input
+              type="number"
+              value={earnestMoney}
+              onChange={(e) => setEarnestMoney(e.target.value)}
+              className="w-full border rounded px-3 py-2 text-sm"
+              min={0}
+            />
+            <p className="text-[11px] text-neutral-500 mt-1">
+              추천: {defaultEarnest.toLocaleString()}만원 (월세의 50%) · 거절 시 전액 환불
+            </p>
+          </div>
+
+          {days > 0 && (
+            <div className="bg-pink-50 border border-pink-200 rounded p-2 text-xs">
+              <strong>{days}일</strong> 임대 · 가계약금{" "}
+              <strong>{parseInt(earnestMoney, 10).toLocaleString()}만원</strong>{" "}
+              에스크로 보관
+            </div>
+          )}
+
           {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2">
             <button
               onClick={apply}
-              disabled={submitting || !earnestMoney}
+              disabled={submitting || !earnestMoney || !startDate || !endDate}
               className="flex-1 bg-pink-600 text-white font-bold py-2.5 rounded text-sm disabled:opacity-50"
             >
-              {submitting ? "신청 중..." : `🛡️ ${parseInt(earnestMoney, 10).toLocaleString()}만원 입금하고 신청`}
+              {submitting
+                ? "신청 중..."
+                : `🛡️ ${parseInt(earnestMoney, 10).toLocaleString()}만원 입금하고 신청`}
             </button>
             <button
               onClick={() => setShowForm(false)}

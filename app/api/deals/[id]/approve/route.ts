@@ -81,6 +81,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     buyer: deal.buyer,
     seller: deal.seller,
     agreedPrice: deal.agreedPrice,
+    rentalStartDate: deal.rentalStartDate,
+    rentalEndDate: deal.rentalEndDate,
     contractData: {},
   });
 

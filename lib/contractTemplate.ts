@@ -19,6 +19,8 @@ type DealForContract = {
   buyer: { name: string; email: string; phone: string | null; residentNumber: string | null; address: string | null };
   seller: { name: string; email: string; phone: string | null; residentNumber: string | null; address: string | null };
   agreedPrice: number; // 만원
+  rentalStartDate?: Date | null;
+  rentalEndDate?: Date | null;
   contractData: {
     closingDate?: string;
     downPayment?: number;
@@ -81,7 +83,11 @@ function todayKr(): string {
 }
 
 export function buildContract(deal: DealForContract): string {
-  const { listing, buyer, seller, agreedPrice, contractData } = deal;
+  const { listing, buyer, seller, agreedPrice, contractData, rentalStartDate, rentalEndDate } = deal;
+  const rentalPeriodLine =
+    rentalStartDate && rentalEndDate
+      ? `${rentalStartDate.toISOString().slice(0, 10)} ~ ${rentalEndDate.toISOString().slice(0, 10)}`
+      : null;
   const isLease = listing.dealType !== "SALE";
   const docTitle = isLease
     ? listing.dealType === "JEONSE"
@@ -138,13 +144,8 @@ ${partyA}과 ${partyB} 쌍방은 아래 표시 부동산에 관하여 다음 계
 ${
   listing.dealType === "MONTHLY"
     ? `| 보 증 금 | ${han(listing.deposit ?? undefined)} | 본 계약 체결과 동시에 지급 |
-| 월  차 임 | ${han(agreedPrice)} | 매월 말일에 지급 |${
-        listing.isShortTerm && listing.rentalMonths
-          ? `
-| 임대 기간 | 인도일로부터 ${listing.rentalMonths}개월 |  |`
-          : `
-| 임대 기간 | 인도일로부터 2년 (합의에 따라 변경) |  |`
-      }`
+| 월  차 임 | ${han(agreedPrice)} | ${listing.isShortTerm ? "전체 기간 일시불 (일할 계산)" : "매월 말일에 지급"} |
+| 임대 기간 | ${rentalPeriodLine ?? (listing.isShortTerm ? "단기" : "1년 이상")} |  |`
     : listing.dealType === "JEONSE"
     ? `| 전세보증금 | ${han(agreedPrice)} | 본 계약 체결과 동시에 지급 |
 | 임대 기간 | 인도일로부터 2년 (합의에 따라 변경) |  |`

@@ -10,6 +10,8 @@ export default function LandlordApprovalCard({
   earnestMoney,
   buyerName,
   rejectReason,
+  rentalStartDate,
+  rentalEndDate,
 }: {
   dealId: string;
   isSeller: boolean;
@@ -17,7 +19,17 @@ export default function LandlordApprovalCard({
   earnestMoney: number | null;
   buyerName: string;
   rejectReason: string | null;
+  rentalStartDate: string | null;
+  rentalEndDate: string | null;
 }) {
+  const days =
+    rentalStartDate && rentalEndDate
+      ? Math.round(
+          (new Date(rentalEndDate).getTime() -
+            new Date(rentalStartDate).getTime()) /
+            86400000,
+        ) + 1
+      : 0;
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -76,6 +88,11 @@ export default function LandlordApprovalCard({
     return (
       <section className="border-2 border-yellow-300 rounded-lg bg-yellow-50 p-4">
         <h2 className="font-bold text-yellow-900">⏳ 집주인 수락 대기 중</h2>
+        {rentalStartDate && rentalEndDate && (
+          <p className="text-sm text-yellow-900 mt-1">
+            희망 기간: <strong>{rentalStartDate} ~ {rentalEndDate} ({days}일)</strong>
+          </p>
+        )}
         <p className="text-sm text-yellow-800 mt-1">
           가계약금 <strong>{earnestMoney?.toLocaleString()}만원</strong>이 피치마켓 에스크로에 보관되었습니다.
           집주인이 신청을 수락하면 계약서가 자동으로 작성됩니다.
@@ -91,10 +108,18 @@ export default function LandlordApprovalCard({
   return (
     <section className="border-2 border-pink-300 rounded-lg bg-pink-50 p-4">
       <h2 className="font-bold">📩 새 입주 신청</h2>
-      <div className="mt-2 text-sm bg-white border rounded p-3">
+      <div className="mt-2 text-sm bg-white border rounded p-3 space-y-1">
         <div>
           신청자: <strong>{buyerName}</strong>
         </div>
+        {rentalStartDate && rentalEndDate && (
+          <div>
+            희망 기간:{" "}
+            <strong>
+              {rentalStartDate} ~ {rentalEndDate} ({days}일)
+            </strong>
+          </div>
+        )}
         <div>
           가계약금: <strong>{earnestMoney?.toLocaleString()}만원</strong>{" "}
           <span className="text-xs text-green-700">✓ 에스크로 보관 중</span>

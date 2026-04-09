@@ -47,6 +47,8 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     buyer: deal.buyer,
     seller: deal.seller,
     agreedPrice: deal.agreedPrice,
+    rentalStartDate: deal.rentalStartDate,
+    rentalEndDate: deal.rentalEndDate,
     contractData,
   });
 
