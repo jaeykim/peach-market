@@ -4,8 +4,9 @@ import Link from "next/link";
 import HeaderNav from "@/components/HeaderNav";
 
 export const metadata: Metadata = {
-  title: "피치마켓 - 투명한 부동산 P2P 거래",
-  description: "중개인 없이 매도자와 매수자가 직접 협상하는 부동산 플랫폼",
+  title: "피치마켓 - 수수료 없는 월세 · 단기 · 전대",
+  description:
+    "동네에서 만나는 수수료 0원 월세. 매물 검증·표준 계약서·전자서명·에스크로까지 무료로 지원합니다.",
 };
 
 export default function RootLayout({

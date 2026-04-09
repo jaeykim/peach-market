@@ -12,15 +12,10 @@ export default async function MePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [myListings, myBids, myDeals, favorites, recentViews] = await Promise.all([
+  const [myListings, myDeals, favorites, recentViews] = await Promise.all([
     prisma.listing.findMany({
       where: { ownerId: user.id },
       orderBy: { createdAt: "desc" },
-    }),
-    prisma.bid.findMany({
-      where: { proposerId: user.id },
-      orderBy: { createdAt: "desc" },
-      include: { listing: true },
     }),
     prisma.deal.findMany({
       where: { OR: [{ buyerId: user.id }, { sellerId: user.id }] },
@@ -116,24 +111,6 @@ export default async function MePage() {
                   <span className="text-xs text-neutral-500 ml-2">
                     {new Date(rv.viewedAt).toLocaleString("ko-KR")}
                   </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      <Section title={`내가 보낸 제안 (${myBids.length})`}>
-        {myBids.length === 0 ? (
-          <Empty>아직 제안한 내역이 없습니다.</Empty>
-        ) : (
-          <ul className="divide-y">
-            {myBids.map((b) => (
-              <li key={b.id} className="py-2">
-                <Link href={`/listings/${b.listing.id}`} className="hover:text-pink-600">
-                  {b.listing.title} —{" "}
-                  <span className="font-semibold">{b.amount.toLocaleString()}만원</span>{" "}
-                  <span className="text-xs text-neutral-500">({b.status})</span>
                 </Link>
               </li>
             ))}
