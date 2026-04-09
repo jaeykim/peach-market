@@ -38,7 +38,7 @@ export default function PaymentCard({
   isBuyer,
   isSeller,
   dealType,
-  isShortTerm,
+  rentalMode,
   rentalStartDate,
   rentalEndDate,
   monthlyAmount, // 만원
@@ -48,7 +48,7 @@ export default function PaymentCard({
   isBuyer: boolean;
   isSeller: boolean;
   dealType: string;
-  isShortTerm: boolean;
+  rentalMode: string | null;
   rentalStartDate: string | null;
   rentalEndDate: string | null;
   monthlyAmount: number;
@@ -70,7 +70,7 @@ export default function PaymentCard({
             86400000,
         ) + 1
       : 0;
-  const isShortTermRental = isShortTerm && days > 0;
+  const isShortTermRental = rentalMode === "SHORT_TERM" && days > 0;
   const fullAmount = isShortTermRental
     ? Math.round((monthlyAmount * days) / 30)
     : monthlyAmount;

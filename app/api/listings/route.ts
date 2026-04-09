@@ -7,6 +7,7 @@ const CreateBody = z.object({
   side: z.enum(["SELL", "BUY"]),
   isSublet: z.boolean().optional(),
   isShortTerm: z.boolean().optional(),
+  shortTermMinMonths: z.number().int().min(1).max(11).optional(),
   rentalMonths: z.number().int().positive().optional(),
   address: z.string().min(1),
   addressDetail: z.string().optional(),

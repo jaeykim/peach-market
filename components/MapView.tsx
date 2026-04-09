@@ -442,9 +442,7 @@ export default function MapView({
                           </Tag>
                           <Tag color="neutral">{dealLabel(l.dealType)}</Tag>
                           {l.isShortTerm && (
-                            <Tag color="orange">
-                              ⏳ 단기{l.rentalMonths ? ` ${l.rentalMonths}개월` : ""}
-                            </Tag>
+                            <Tag color="orange">⏳ 단기 가능</Tag>
                           )}
                           <Tag color="neutral">{propTypeLabel(l.propertyType)}</Tag>
                           {l.ownershipVerified && <Tag color="green">✓ 검증</Tag>}

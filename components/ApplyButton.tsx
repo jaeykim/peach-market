@@ -15,6 +15,7 @@ export default function ApplyButton({
   isLoggedIn,
   isClosed,
   ownershipVerified,
+  shortTermMinMonths,
 }: {
   listingId: string;
   listingTitle: string;
@@ -26,11 +27,13 @@ export default function ApplyButton({
   isLoggedIn: boolean;
   isClosed: boolean;
   ownershipVerified: boolean;
+  shortTermMinMonths: number;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [rentalMode, setRentalMode] = useState<"MONTHLY" | "SHORT_TERM">("MONTHLY");
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
 
@@ -62,6 +65,7 @@ export default function ApplyButton({
           earnestMoney: parseInt(earnestMoney, 10) || 0,
           startDate,
           endDate,
+          rentalMode,
         }),
       });
       if (!res.ok) {
@@ -164,9 +168,58 @@ export default function ApplyButton({
         </button>
       ) : (
         <div className="space-y-3 border-t pt-3">
+          {/* 계약 유형 선택 */}
+          {isShortTerm ? (
+            <div>
+              <label className="text-xs font-semibold text-neutral-600 block mb-1">
+                계약 유형
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRentalMode("MONTHLY");
+                    setStartDate(null);
+                    setEndDate(null);
+                  }}
+                  className={`p-2 rounded border-2 text-sm font-semibold text-left ${
+                    rentalMode === "MONTHLY"
+                      ? "border-pink-500 bg-pink-50"
+                      : "border-neutral-200"
+                  }`}
+                >
+                  🗓️ 월세
+                  <div className="text-[10px] text-neutral-500 font-normal">1년 이상 · 매월 결제</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRentalMode("SHORT_TERM");
+                    setStartDate(null);
+                    setEndDate(null);
+                  }}
+                  className={`p-2 rounded border-2 text-sm font-semibold text-left ${
+                    rentalMode === "SHORT_TERM"
+                      ? "border-pink-500 bg-pink-50"
+                      : "border-neutral-200"
+                  }`}
+                >
+                  ⏳ 단기임대
+                  <div className="text-[10px] text-neutral-500 font-normal">
+                    {shortTermMinMonths}개월 이상 · 일시불
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <div>
             <label className="text-xs font-semibold text-neutral-600 block mb-1">
-              📅 임대 기간 선택 ({isShortTerm ? "최소 7일" : "최소 1년"})
+              📅 임대 기간 선택 (
+              {rentalMode === "SHORT_TERM"
+                ? `최소 ${shortTermMinMonths}개월`
+                : "최소 1년"}
+              )
             </label>
             <RentalCalendar
               listingId={listingId}
@@ -176,13 +229,12 @@ export default function ApplyButton({
                 setStartDate(s);
                 setEndDate(e);
               }}
-              minDays={isShortTerm ? 7 : 365}
+              minDays={
+                rentalMode === "SHORT_TERM"
+                  ? shortTermMinMonths * 30
+                  : 365
+              }
             />
-            <p className="text-[11px] text-neutral-500 mt-1">
-              {isShortTerm
-                ? "단기임대: 7일 이상 / 결제는 전체 금액 일시불입니다."
-                : "월세 계약: 1년 이상 / 매월 월세를 결제하는 방식입니다."}
-            </p>
           </div>
 
           <div>

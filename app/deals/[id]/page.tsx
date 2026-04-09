@@ -152,7 +152,7 @@ export default async function DealPage({
             isBuyer={isBuyer}
             isSeller={isSeller}
             dealType={deal.listing.dealType}
-            isShortTerm={deal.listing.isShortTerm}
+            rentalMode={deal.rentalMode}
             rentalStartDate={deal.rentalStartDate?.toISOString().slice(0, 10) ?? null}
             rentalEndDate={deal.rentalEndDate?.toISOString().slice(0, 10) ?? null}
             monthlyAmount={deal.agreedPrice}

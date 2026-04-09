@@ -55,9 +55,11 @@ model Listing {
   side        String   // "SELL" | "BUY"
   // 임대 매물에서 전대(sublet) 여부
   isSublet    Boolean  @default(false)
-  // 단기임대 여부 (방학 단기, 인턴십 등)
+  // 단기임대도 함께 받을지 여부 (월세는 항상 가능, 추가 옵션)
   isShortTerm Boolean  @default(false)
-  // 임대 기간 (개월 수, 단기임대일 때 주로 사용)
+  // 단기임대로 받을 때 최소 개월 (예: 3 = 3개월 이상)
+  shortTermMinMonths Int @default(3)
+  // (legacy) 임대 기간 - 더 이상 사용 안 함
   rentalMonths Int?
 
   // 위치
@@ -146,6 +148,7 @@ model Deal {
   // 임대 기간 (캘린더에서 선택)
   rentalStartDate DateTime?
   rentalEndDate   DateTime?
+  rentalMode      String?   // MONTHLY / SHORT_TERM
 
   // 가계약금 (단위: 만원)
   earnestMoney            Int?

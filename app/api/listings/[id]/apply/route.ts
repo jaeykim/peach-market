@@ -6,8 +6,9 @@ import { notify } from "@/lib/notify";
 
 const Body = z.object({
   earnestMoney: z.number().int().nonnegative(),
-  startDate: z.string(), // YYYY-MM-DD
+  startDate: z.string(),
   endDate: z.string(),
+  rentalMode: z.enum(["MONTHLY", "SHORT_TERM"]),
 });
 
 // Phase 1 임차 신청 흐름:
@@ -40,13 +41,28 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
     return NextResponse.json({ error: "잘못된 날짜입니다." }, { status: 400 });
   }
-  const daysDiff = Math.round((end.getTime() - start.getTime()) / 86400000);
-  // 단기임대: 최소 7일 / 일반 월세: 최소 365일 (1년)
-  const minDays = listing.isShortTerm ? 7 : 365;
-  if (daysDiff < minDays) {
-    const label = listing.isShortTerm ? "7일" : "1년 (365일)";
+  const daysDiff = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+
+  // 단기임대 모드 가능 여부 검증
+  if (parsed.data.rentalMode === "SHORT_TERM" && !listing.isShortTerm) {
     return NextResponse.json(
-      { error: `임대 기간은 최소 ${label} 이상이어야 합니다.` },
+      { error: "이 매물은 단기임대를 받지 않습니다." },
+      { status: 400 },
+    );
+  }
+
+  // 모드별 최소 기간
+  const minDays =
+    parsed.data.rentalMode === "SHORT_TERM"
+      ? listing.shortTermMinMonths * 30
+      : 365;
+  const minLabel =
+    parsed.data.rentalMode === "SHORT_TERM"
+      ? `${listing.shortTermMinMonths}개월`
+      : "1년";
+  if (daysDiff < minDays) {
+    return NextResponse.json(
+      { error: `${parsed.data.rentalMode === "SHORT_TERM" ? "단기" : "월세"} 임대 기간은 최소 ${minLabel} 이상이어야 합니다.` },
       { status: 400 },
     );
   }
@@ -89,6 +105,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       agreedPrice: listing.askingPrice,
       rentalStartDate: start,
       rentalEndDate: end,
+      rentalMode: parsed.data.rentalMode,
       // 가계약금 에스크로 즉시 보관 처리
       earnestMoney: parsed.data.earnestMoney,
       earnestMoneyStatus: "CONFIRMED",

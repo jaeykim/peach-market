@@ -23,7 +23,7 @@ export default function NewListingPage({
   const [side, setSide] = useState<"SELL" | "BUY">("SELL");
   const [isSublet, setIsSublet] = useState(false);
   const [isShortTerm, setIsShortTerm] = useState(false);
-  const [rentalMonths, setRentalMonths] = useState("");
+  const [shortTermMinMonths, setShortTermMinMonths] = useState("3");
   const [address, setAddress] = useState<SelectedAddress | null>(null);
   const [addressDetail, setAddressDetail] = useState("");
   const [title, setTitle] = useState("");
@@ -65,7 +65,7 @@ export default function NewListingPage({
         side,
         isSublet,
         isShortTerm,
-        rentalMonths: isShortTerm && rentalMonths ? parseInt(rentalMonths, 10) : undefined,
+        shortTermMinMonths: isShortTerm ? parseInt(shortTermMinMonths, 10) || 3 : undefined,
         title,
         address: address.address,
         addressDetail: addressDetail || undefined,
@@ -209,16 +209,19 @@ export default function NewListingPage({
             </label>
             {isShortTerm && (
               <div className="mt-2 ml-6">
-                <Field label="임대 기간 (개월)">
+                <Field label="단기임대 최소 기간 (개월)">
                   <input
                     type="number"
                     className="input w-32"
                     placeholder="3"
-                    value={rentalMonths}
-                    onChange={(e) => setRentalMonths(e.target.value)}
+                    value={shortTermMinMonths}
+                    onChange={(e) => setShortTermMinMonths(e.target.value)}
                     min={1}
-                    max={24}
+                    max={11}
                   />
+                  <p className="text-[10px] text-neutral-500 mt-0.5">
+                    임차인은 이 기간 이상만 단기임대 신청 가능. 이 매물은 월세(1년+)와 단기임대를 모두 받습니다.
+                  </p>
                 </Field>
               </div>
             )}

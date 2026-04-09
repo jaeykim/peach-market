@@ -67,7 +67,7 @@ export default async function ListingDetailPage({
         </span>
         {listing.isShortTerm && (
           <span className="text-xs font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
-            ⏳ 단기 {listing.rentalMonths ? `${listing.rentalMonths}개월` : ""}
+            ⏳ 단기임대 가능 ({listing.shortTermMinMonths}개월~)
           </span>
         )}
         {listing.ownershipVerifiedAt ? (
@@ -169,6 +169,7 @@ export default async function ListingDetailPage({
             isLoggedIn={!!user}
             isClosed={listing.status === "CLOSED"}
             ownershipVerified={!!listing.ownershipVerifiedAt}
+            shortTermMinMonths={listing.shortTermMinMonths}
           />
           {user && <RegistryViewer listingId={listing.id} />}
           <MatchRecommendations listingId={listing.id} />
