@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import DealContractForm from "@/components/DealContractForm";
 import DealWorkflow from "@/components/DealWorkflow";
 import DealChat from "@/components/DealChat";
 import EarnestMoneyCard from "@/components/EarnestMoneyCard";
@@ -77,14 +76,6 @@ export default async function DealPage({
         <PartyCard title="매수인" party={deal.buyer} />
       </section>
 
-      <section className="border rounded-lg bg-white p-4 mb-6">
-        <h2 className="font-bold mb-3">계약 준비 정보</h2>
-        <DealContractForm
-          dealId={deal.id}
-          agreedPrice={deal.agreedPrice}
-          initial={contractData}
-        />
-      </section>
 
       {deal.listing.dealType !== "SALE" && (
         <div className="mb-6">

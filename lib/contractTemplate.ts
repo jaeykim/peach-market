@@ -12,6 +12,9 @@ type DealForContract = {
     totalFloors: number | null;
     builtYear: number | null;
     dealType: string;
+    deposit: number | null;
+    isShortTerm: boolean;
+    rentalMonths: number | null;
   };
   buyer: { name: string; email: string; phone: string | null; residentNumber: string | null; address: string | null };
   seller: { name: string; email: string; phone: string | null; residentNumber: string | null; address: string | null };
@@ -126,21 +129,35 @@ ${partyA}과 ${partyB} 쌍방은 아래 표시 부동산에 관하여 다음 계
 ### 제1조 (목적)
 위 부동산의 ${
     isLease ? "임대차" : "매매"
-  }에 있어 ${partyA}과 ${partyB}은 합의에 의하여 ${priceLabel}을 아래와 같이 지불하기로 한다.
+  }에 있어 ${partyA}과 ${partyB}은 합의에 의하여 ${
+    isLease ? "임대차 조건" : priceLabel
+  }을 아래와 같이 정하고 이행한다.
 
-### 제2조 (${priceLabel}의 지급)
+### 제2조 (${isLease ? "임대차 조건" : priceLabel + "의 지급"})
 
-| ${priceLabel} | ${han(agreedPrice)} |  |
+${
+  listing.dealType === "MONTHLY"
+    ? `| 보 증 금 | ${han(listing.deposit ?? undefined)} | 본 계약 체결과 동시에 지급 |
+| 월  차 임 | ${han(agreedPrice)} | 매월 말일에 지급 |${
+        listing.isShortTerm && listing.rentalMonths
+          ? `
+| 임대 기간 | 인도일로부터 ${listing.rentalMonths}개월 |  |`
+          : `
+| 임대 기간 | 인도일로부터 2년 (합의에 따라 변경) |  |`
+      }`
+    : listing.dealType === "JEONSE"
+    ? `| 전세보증금 | ${han(agreedPrice)} | 본 계약 체결과 동시에 지급 |
+| 임대 기간 | 인도일로부터 2년 (합의에 따라 변경) |  |`
+    : `| ${priceLabel} | ${han(agreedPrice)} |  |
 | 계 약 금 | ${han(contractData.downPayment)} | 본 계약 체결과 동시에 지급 |
 | 중 도 금 | ${han(contractData.midPayment)} | 별도 합의일에 지급 |
-| 잔    금 | ${han(contractData.finalPayment)} | ${formatDate(contractData.closingDate)}에 지급 |
+| 잔    금 | ${han(contractData.finalPayment)} | ${formatDate(contractData.closingDate)}에 지급 |`
+}
 
-### 제3조 (소유권 이전 등${isLease ? " 인도" : ""})
+### 제3조 (${isLease ? "인도 및 사용" : "소유권 이전"})
 ${
   isLease
-    ? `${partyA}은 위 부동산을 임대차 목적대로 사용·수익할 수 있는 상태로 ${formatDate(
-        contractData.closingDate,
-      )}까지 ${partyB}에게 인도하며, 임대차 기간은 인도일로부터 [기간]으로 한다.`
+    ? `${partyA}은 위 부동산을 임대차 목적대로 사용·수익할 수 있는 상태로 ${partyB}에게 인도하며, ${partyB}은 계약 목적 외 용도로 사용하지 못한다. 계약 조건은 본 계약에 따른다.`
     : `${partyA}은 ${priceLabel}의 잔금 수령과 동시에 ${partyB}에게 소유권 이전등기에 필요한 모든 서류를 교부하고 등기절차에 협력하여야 하며, 위 부동산의 인도일은 ${formatDate(
         contractData.closingDate,
       )}로 한다.`
