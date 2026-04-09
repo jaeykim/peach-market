@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import HeaderNav from "@/components/HeaderNav";
 
 export const metadata: Metadata = {
   title: "피치마켓 - 투명한 부동산 P2P 거래",
@@ -18,12 +19,7 @@ export default function RootLayout({
             <Link href="/" className="text-xl font-bold text-pink-600">
               🍑 피치마켓
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/" className="hover:text-pink-600">지도</Link>
-              <Link href="/listings/new" className="hover:text-pink-600">매물 등록</Link>
-              <Link href="/me" className="hover:text-pink-600">내 활동</Link>
-              <Link href="/login" className="hover:text-pink-600">로그인</Link>
-            </nav>
+            <HeaderNav />
           </div>
         </header>
         <main>{children}</main>

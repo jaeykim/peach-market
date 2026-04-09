@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import VerifyButton from "@/components/VerifyButton";
+import { sideLabel } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -9,28 +11,49 @@ export default async function MePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const myListings = await prisma.listing.findMany({
-    where: { ownerId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const myBids = await prisma.bid.findMany({
-    where: { proposerId: user.id },
-    orderBy: { createdAt: "desc" },
-    include: { listing: true },
-  });
-
-  const myDeals = await prisma.deal.findMany({
-    where: { OR: [{ buyerId: user.id }, { sellerId: user.id }] },
-    orderBy: { createdAt: "desc" },
-    include: { listing: true },
-  });
+  const [myListings, myBids, myDeals, favorites, recentViews] = await Promise.all([
+    prisma.listing.findMany({
+      where: { ownerId: user.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.bid.findMany({
+      where: { proposerId: user.id },
+      orderBy: { createdAt: "desc" },
+      include: { listing: true },
+    }),
+    prisma.deal.findMany({
+      where: { OR: [{ buyerId: user.id }, { sellerId: user.id }] },
+      orderBy: { createdAt: "desc" },
+      include: { listing: true },
+    }),
+    prisma.favorite.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      include: { listing: true },
+    }),
+    prisma.recentView.findMany({
+      where: { userId: user.id },
+      orderBy: { viewedAt: "desc" },
+      take: 10,
+      include: { listing: true },
+    }),
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">{user.name}님</h1>
-        <p className="text-sm text-neutral-500">{user.email}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {user.name}님 {user.verifiedAt && <span className="text-green-600">✅</span>}
+          </h1>
+          <p className="text-sm text-neutral-500">{user.email}</p>
+          {user.verifiedAt && (
+            <p className="text-xs text-green-600 mt-1">
+              본인 인증 완료 ({new Date(user.verifiedAt).toLocaleDateString("ko-KR")})
+            </p>
+          )}
+        </div>
+        {!user.verifiedAt && <VerifyButton />}
       </div>
 
       <Section title={`내 매물 (${myListings.length})`}>
@@ -42,10 +65,50 @@ export default async function MePage() {
               <li key={l.id} className="py-2">
                 <Link href={`/listings/${l.id}`} className="hover:text-pink-600">
                   <span className="text-xs font-bold mr-2">
-                    [{l.side === "SELL" ? "매도" : "매수"}]
+                    [{sideLabel(l.dealType, l.side, l.isSublet)}]
                   </span>
                   {l.title}
-                  <span className="text-xs text-neutral-500 ml-2">({l.status})</span>
+                  <span className="text-xs text-neutral-500 ml-2">
+                    ({l.status} · 조회 {l.viewCount}회)
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section title={`찜한 매물 (${favorites.length})`}>
+        {favorites.length === 0 ? (
+          <Empty>찜한 매물이 없습니다.</Empty>
+        ) : (
+          <ul className="divide-y">
+            {favorites.map((f) => (
+              <li key={f.id} className="py-2">
+                <Link href={`/listings/${f.listingId}`} className="hover:text-pink-600">
+                  ♥ {f.listing.title}
+                  <span className="text-xs text-neutral-500 ml-2">
+                    {f.listing.address}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section title={`최근 본 매물 (${recentViews.length})`}>
+        {recentViews.length === 0 ? (
+          <Empty>최근 본 매물이 없습니다.</Empty>
+        ) : (
+          <ul className="divide-y">
+            {recentViews.map((rv) => (
+              <li key={rv.id} className="py-2">
+                <Link href={`/listings/${rv.listingId}`} className="hover:text-pink-600">
+                  {rv.listing.title}
+                  <span className="text-xs text-neutral-500 ml-2">
+                    {new Date(rv.viewedAt).toLocaleString("ko-KR")}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -62,7 +125,7 @@ export default async function MePage() {
               <li key={b.id} className="py-2">
                 <Link href={`/listings/${b.listing.id}`} className="hover:text-pink-600">
                   {b.listing.title} —{" "}
-                  <span className="font-semibold">{b.amount.toLocaleString()}원</span>{" "}
+                  <span className="font-semibold">{b.amount.toLocaleString()}만원</span>{" "}
                   <span className="text-xs text-neutral-500">({b.status})</span>
                 </Link>
               </li>
@@ -79,7 +142,7 @@ export default async function MePage() {
             {myDeals.map((d) => (
               <li key={d.id} className="py-2">
                 <Link href={`/deals/${d.id}`} className="hover:text-pink-600">
-                  {d.listing.title} — {d.agreedPrice.toLocaleString()}원 ({d.status})
+                  {d.listing.title} — {d.agreedPrice.toLocaleString()}만원 ({d.status})
                 </Link>
               </li>
             ))}

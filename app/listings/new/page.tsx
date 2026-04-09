@@ -1,167 +1,445 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import AddressPicker, { SelectedAddress } from "@/components/AddressPicker";
+import PhotoUploader from "@/components/PhotoUploader";
 
-export default function NewListingPage() {
+const PROPERTY_TYPES = [
+  { value: "APT", label: "아파트" },
+  { value: "OFFICETEL", label: "오피스텔" },
+  { value: "VILLA", label: "빌라/연립" },
+  { value: "HOUSE", label: "단독주택" },
+  { value: "MULTI_FAMILY", label: "다가구주택" },
+  { value: "STUDIO", label: "원룸/투룸" },
+  { value: "SHOP", label: "상가" },
+  { value: "OFFICE", label: "사무실" },
+  { value: "KNOWLEDGE", label: "지식산업센터" },
+  { value: "BUILDING", label: "건물(꼬마빌딩)" },
+  { value: "FACTORY", label: "공장" },
+  { value: "WAREHOUSE", label: "창고" },
+  { value: "LODGING", label: "숙박시설" },
+  { value: "LAND", label: "토지" },
+];
+
+export default function NewListingPage({
+  // 서버에서 환경변수를 직접 못 쓰므로 NEXT_PUBLIC_ 접두사 사용
+}: Record<string, never>) {
+  const naverClientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || "";
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    side: "SELL",
-    title: "",
-    address: "",
-    addressDetail: "",
-    lat: "37.5665",
-    lng: "126.978",
-    propertyType: "APT",
-    dealType: "SALE",
-    askingPrice: "",
-    areaExclusive: "",
-    floor: "",
-    totalFloors: "",
-    builtYear: "",
-    rooms: "",
-    bathrooms: "",
-    description: "",
-  });
 
-  function update<K extends keyof typeof form>(k: K, v: string) {
-    setForm((f) => ({ ...f, [k]: v }));
+  const [side, setSide] = useState<"SELL" | "BUY">("SELL");
+  const [isSublet, setIsSublet] = useState(false);
+  const [address, setAddress] = useState<SelectedAddress | null>(null);
+  const [addressDetail, setAddressDetail] = useState("");
+  const [title, setTitle] = useState("");
+  const [propertyType, setPropertyType] = useState("APT");
+  const [dealType, setDealType] = useState<"SALE" | "JEONSE" | "MONTHLY">("SALE");
+  const [askingPrice, setAskingPrice] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [deposit, setDeposit] = useState("");
+  const [areaExclusive, setAreaExclusive] = useState(""); // 항상 ㎡ 단위로 저장
+  const [areaUnit, setAreaUnit] = useState<"M2" | "PY">("M2");
+  const [floor, setFloor] = useState("");
+  const [totalFloors, setTotalFloors] = useState("");
+  const [builtYear, setBuiltYear] = useState("");
+  const [rooms, setRooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
+  const [description, setDescription] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // AI fair price state
+  const [fairPrice, setFairPrice] = useState<{
+    estimate: number;
+    low: number;
+    high: number;
+    reasoning: string;
+    source: string;
+  } | null>(null);
+  const [fpLoading, setFpLoading] = useState(false);
+
+  async function getAIPrice() {
+    if (!address) {
+      setError("AI 적정가 추천 전에 주소를 먼저 선택해주세요.");
+      return;
+    }
+    setError("");
+    setFpLoading(true);
+    try {
+      const res = await fetch("/api/fair-price", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: address.address,
+          propertyType,
+          dealType,
+          areaExclusive: areaExclusive ? parseFloat(areaExclusive) : undefined,
+          floor: floor ? parseInt(floor, 10) : undefined,
+          totalFloors: totalFloors ? parseInt(totalFloors, 10) : undefined,
+          builtYear: builtYear ? parseInt(builtYear, 10) : undefined,
+          rooms: rooms ? parseInt(rooms, 10) : undefined,
+        }),
+      });
+      if (res.ok) setFairPrice(await res.json());
+    } finally {
+      setFpLoading(false);
+    }
+  }
+
+  function applyFairPrice() {
+    if (fairPrice) setAskingPrice(String(fairPrice.estimate));
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    const body: Record<string, unknown> = {
-      side: form.side,
-      title: form.title,
-      address: form.address,
-      addressDetail: form.addressDetail || undefined,
-      lat: parseFloat(form.lat),
-      lng: parseFloat(form.lng),
-      propertyType: form.propertyType,
-      dealType: form.dealType,
-      askingPrice: parseInt(form.askingPrice, 10),
-      areaExclusive: form.areaExclusive ? parseFloat(form.areaExclusive) : undefined,
-      floor: form.floor ? parseInt(form.floor, 10) : undefined,
-      totalFloors: form.totalFloors ? parseInt(form.totalFloors, 10) : undefined,
-      builtYear: form.builtYear ? parseInt(form.builtYear, 10) : undefined,
-      rooms: form.rooms ? parseInt(form.rooms, 10) : undefined,
-      bathrooms: form.bathrooms ? parseInt(form.bathrooms, 10) : undefined,
-      description: form.description || undefined,
-    };
-    const res = await fetch("/api/listings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const j = await res.json();
-      setError(typeof j.error === "string" ? j.error : "등록 실패 (로그인 필요)");
+    if (!address) {
+      setError("주소를 선택해주세요.");
       return;
     }
-    const j = await res.json();
-    router.push(`/listings/${j.listing.id}`);
+    if (!askingPrice) {
+      setError("희망 가격을 입력해주세요.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const body = {
+        side,
+        isSublet,
+        title,
+        address: address.address,
+        addressDetail: addressDetail || undefined,
+        lat: address.lat,
+        lng: address.lng,
+        propertyType,
+        dealType,
+        askingPrice: parseInt(askingPrice, 10),
+        priceMin: side === "BUY" && priceMin ? parseInt(priceMin, 10) : undefined,
+        priceMax: side === "BUY" && priceMax ? parseInt(priceMax, 10) : undefined,
+        deposit: deposit ? parseInt(deposit, 10) : undefined,
+        areaExclusive: areaExclusive ? parseFloat(areaExclusive) : undefined,
+        floor: floor ? parseInt(floor, 10) : undefined,
+        totalFloors: totalFloors ? parseInt(totalFloors, 10) : undefined,
+        builtYear: builtYear ? parseInt(builtYear, 10) : undefined,
+        rooms: rooms ? parseInt(rooms, 10) : undefined,
+        bathrooms: bathrooms ? parseInt(bathrooms, 10) : undefined,
+        description: description || undefined,
+        photos: photos.length > 0 ? JSON.stringify(photos) : undefined,
+      };
+      const res = await fetch("/api/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const j = await res.json();
+        setError(typeof j.error === "string" ? j.error : "등록 실패 (로그인 필요)");
+        return;
+      }
+      const j = await res.json();
+      router.push(`/listings/${j.listing.id}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
+  const priceLabel =
+    dealType === "MONTHLY" ? "월세" : dealType === "JEONSE" ? "전세금" : "매매가";
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">매물 등록</h1>
-      <form onSubmit={submit} className="space-y-4">
-        <div>
-          <label className="text-sm font-semibold">등록 유형</label>
-          <div className="flex gap-2 mt-1">
-            <button
-              type="button"
-              onClick={() => update("side", "SELL")}
-              className={`px-4 py-2 rounded border ${
-                form.side === "SELL" ? "bg-pink-600 text-white" : "bg-white"
-              }`}
-            >
-              매도 (집을 팝니다)
-            </button>
-            <button
-              type="button"
-              onClick={() => update("side", "BUY")}
-              className={`px-4 py-2 rounded border ${
-                form.side === "BUY" ? "bg-blue-600 text-white" : "bg-white"
-              }`}
-            >
-              매수 (집을 찾습니다)
-            </button>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-1">매물 등록</h1>
+      <p className="text-sm text-neutral-500 mb-6">
+        투명하게 정보를 공개하면 더 빠르게 거래가 성사됩니다.
+      </p>
+
+      <form onSubmit={submit} className="space-y-6">
+        {/* 1. 등록 유형 */}
+        <Section title="① 등록 유형" subtitle="어떤 거래를 하시나요?">
+          {dealType === "SALE" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <BigOption
+                active={side === "SELL" && !isSublet}
+                activeColor="pink"
+                onClick={() => {
+                  setSide("SELL");
+                  setIsSublet(false);
+                }}
+                label="🏠 매도"
+                desc="내 집을 팝니다"
+              />
+              <BigOption
+                active={side === "BUY" && !isSublet}
+                activeColor="blue"
+                onClick={() => {
+                  setSide("BUY");
+                  setIsSublet(false);
+                }}
+                label="🔍 매수"
+                desc="이런 집을 찾습니다"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <BigOption
+                active={side === "SELL" && !isSublet}
+                activeColor="pink"
+                onClick={() => {
+                  setSide("SELL");
+                  setIsSublet(false);
+                }}
+                label="🏠 임대"
+                desc="내 집을 빌려줍니다"
+              />
+              <BigOption
+                active={side === "BUY" && !isSublet}
+                activeColor="blue"
+                onClick={() => {
+                  setSide("BUY");
+                  setIsSublet(false);
+                }}
+                label="🔍 임차"
+                desc="살 집을 구합니다"
+              />
+              <BigOption
+                active={side === "SELL" && isSublet}
+                activeColor="pink"
+                onClick={() => {
+                  setSide("SELL");
+                  setIsSublet(true);
+                }}
+                label="↪️ 전대"
+                desc="임차 중인 집을 다시 빌려줍니다"
+              />
+              <BigOption
+                active={side === "BUY" && isSublet}
+                activeColor="blue"
+                onClick={() => {
+                  setSide("BUY");
+                  setIsSublet(true);
+                }}
+                label="↩️ 전차"
+                desc="전대 매물을 찾습니다"
+              />
+            </div>
+          )}
+        </Section>
+
+        {/* 2. 위치 */}
+        <Section title="② 위치" subtitle="주소를 검색해서 선택해주세요">
+          <AddressPicker
+            value={address}
+            onChange={setAddress}
+            naverClientId={naverClientId}
+          />
+          {address && (
+            <input
+              type="text"
+              placeholder="상세 주소 (동/호수 등, 선택)"
+              value={addressDetail}
+              onChange={(e) => setAddressDetail(e.target.value)}
+              className="input mt-2"
+            />
+          )}
+        </Section>
+
+        {/* 3. 종류 + 거래 유형 */}
+        <Section title="③ 매물 종류 / 거래 유형">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="매물 종류">
+              <select
+                className="input"
+                value={propertyType}
+                onChange={(e) => setPropertyType(e.target.value)}
+              >
+                {PROPERTY_TYPES.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="거래 유형">
+              <div className="grid grid-cols-3 gap-1">
+                {(["SALE", "JEONSE", "MONTHLY"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setDealType(v)}
+                    className={`py-2 rounded text-sm font-semibold border ${
+                      dealType === v
+                        ? "bg-pink-600 text-white border-pink-600"
+                        : "bg-white"
+                    }`}
+                  >
+                    {v === "SALE" ? "매매" : v === "JEONSE" ? "전세" : "월세"}
+                  </button>
+                ))}
+              </div>
+            </Field>
           </div>
-        </div>
+        </Section>
 
-        <Field label="제목 *">
-          <input className="input" required value={form.title} onChange={(e) => update("title", e.target.value)} />
-        </Field>
+        {/* 4. 제목 + 면적 + 층 등 */}
+        <Section title="④ 기본 정보">
+          <Field label="제목 *">
+            <input
+              className="input"
+              required
+              placeholder="예) 강남 래미안 84㎡ 남향 고층"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </Field>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+            <Field label="전용면적">
+              <AreaInput
+                m2={areaExclusive}
+                setM2={setAreaExclusive}
+                unit={areaUnit}
+                setUnit={setAreaUnit}
+              />
+            </Field>
+            <Field label="준공 연도">
+              <input className="input" type="number" placeholder="예) 2018" value={builtYear} onChange={(e) => setBuiltYear(e.target.value)} />
+            </Field>
+            <Field label="층 / 총 층수">
+              <div className="flex gap-1 items-center">
+                <input className="input" type="number" placeholder="층" value={floor} onChange={(e) => setFloor(e.target.value)} />
+                <span className="text-neutral-400">/</span>
+                <input className="input" type="number" placeholder="총" value={totalFloors} onChange={(e) => setTotalFloors(e.target.value)} />
+              </div>
+            </Field>
+            <Field label="방 / 욕실">
+              <div className="flex gap-1 items-center">
+                <input className="input" type="number" placeholder="방" value={rooms} onChange={(e) => setRooms(e.target.value)} />
+                <span className="text-neutral-400">/</span>
+                <input className="input" type="number" placeholder="욕실" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} />
+              </div>
+            </Field>
+          </div>
+        </Section>
 
-        <Field label="주소 *">
-          <input className="input" required placeholder="도로명 주소" value={form.address} onChange={(e) => update("address", e.target.value)} />
-        </Field>
-        <Field label="상세 주소">
-          <input className="input" value={form.addressDetail} onChange={(e) => update("addressDetail", e.target.value)} />
-        </Field>
+        {/* 5. 가격 + AI 추천 */}
+        <Section title="⑤ 희망 가격" subtitle="적정가를 모르겠다면 AI 추천을 받아보세요">
+          <div className="space-y-2">
+            <Field label={`희망 ${priceLabel} (만원) *`}>
+              <div className="flex gap-2">
+                <input
+                  className="input"
+                  required
+                  type="number"
+                  placeholder="예) 25000 (= 2억 5000만원)"
+                  value={askingPrice}
+                  onChange={(e) => setAskingPrice(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={getAIPrice}
+                  disabled={fpLoading}
+                  className="shrink-0 bg-purple-100 text-purple-700 font-semibold px-3 rounded text-sm whitespace-nowrap hover:bg-purple-200 disabled:opacity-50"
+                >
+                  {fpLoading ? "분석 중..." : "✨ AI 적정가"}
+                </button>
+              </div>
+            </Field>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="위도 *">
-            <input className="input" required value={form.lat} onChange={(e) => update("lat", e.target.value)} />
-          </Field>
-          <Field label="경도 *">
-            <input className="input" required value={form.lng} onChange={(e) => update("lng", e.target.value)} />
-          </Field>
-        </div>
+            {side === "BUY" && (
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <div className="text-xs font-bold text-blue-900 mb-2">
+                  📊 가격 범위 (선택, 매수자 전용)
+                </div>
+                <p className="text-[11px] text-blue-700 mb-2">
+                  희망가 외에 수용 가능한 가격대를 알려주면 매도자가 더 정확하게 매칭됩니다.
+                  <br />둘 다 비우면 위 희망가만 사용. 한쪽만 입력하면 &lsquo;이상&rsquo; 또는 &lsquo;이하&rsquo;.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="최소 (이상)">
+                    <input
+                      className="input"
+                      type="number"
+                      placeholder="예) 22000"
+                      value={priceMin}
+                      onChange={(e) => setPriceMin(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="최대 (이하)">
+                    <input
+                      className="input"
+                      type="number"
+                      placeholder="예) 25000"
+                      value={priceMax}
+                      onChange={(e) => setPriceMax(e.target.value)}
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="매물 종류">
-            <select className="input" value={form.propertyType} onChange={(e) => update("propertyType", e.target.value)}>
-              <option value="APT">아파트</option>
-              <option value="OFFICETEL">오피스텔</option>
-              <option value="HOUSE">단독/다가구</option>
-              <option value="VILLA">빌라</option>
-            </select>
-          </Field>
-          <Field label="거래 유형">
-            <select className="input" value={form.dealType} onChange={(e) => update("dealType", e.target.value)}>
-              <option value="SALE">매매</option>
-              <option value="JEONSE">전세</option>
-              <option value="MONTHLY">월세</option>
-            </select>
-          </Field>
-        </div>
+            {fairPrice && (
+              <div className="border-l-4 border-purple-400 bg-purple-50 p-3 rounded text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-purple-900">
+                    AI 적정가 추천: {(fairPrice.estimate / 10000).toFixed(1)}억
+                    <span className="text-xs ml-1">({fairPrice.estimate.toLocaleString()}만원)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={applyFairPrice}
+                    className="text-xs bg-purple-600 text-white px-2 py-1 rounded font-semibold"
+                  >
+                    적용
+                  </button>
+                </div>
+                <div className="text-xs text-purple-700 mt-1">
+                  범위 {fairPrice.low.toLocaleString()} ~ {fairPrice.high.toLocaleString()}만원
+                </div>
+                <p className="text-xs text-purple-800 mt-1">{fairPrice.reasoning}</p>
+                <p className="text-[10px] text-purple-500 mt-1">source: {fairPrice.source}</p>
+              </div>
+            )}
 
-        <Field label="희망 가격 (원) *">
-          <input className="input" required type="number" value={form.askingPrice} onChange={(e) => update("askingPrice", e.target.value)} />
-        </Field>
+            {dealType === "MONTHLY" && (
+              <Field label="보증금 (만원)">
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="예) 10000 (= 1억)"
+                  value={deposit}
+                  onChange={(e) => setDeposit(e.target.value)}
+                />
+              </Field>
+            )}
+          </div>
+        </Section>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="전용면적 (㎡)">
-            <input className="input" type="number" value={form.areaExclusive} onChange={(e) => update("areaExclusive", e.target.value)} />
-          </Field>
-          <Field label="준공 연도">
-            <input className="input" type="number" value={form.builtYear} onChange={(e) => update("builtYear", e.target.value)} />
-          </Field>
-          <Field label="층">
-            <input className="input" type="number" value={form.floor} onChange={(e) => update("floor", e.target.value)} />
-          </Field>
-          <Field label="총 층수">
-            <input className="input" type="number" value={form.totalFloors} onChange={(e) => update("totalFloors", e.target.value)} />
-          </Field>
-          <Field label="방 개수">
-            <input className="input" type="number" value={form.rooms} onChange={(e) => update("rooms", e.target.value)} />
-          </Field>
-          <Field label="욕실 개수">
-            <input className="input" type="number" value={form.bathrooms} onChange={(e) => update("bathrooms", e.target.value)} />
-          </Field>
-        </div>
+        {/* 6. 사진 */}
+        <Section title="⑥ 사진" subtitle="여러 장 업로드 가능 (드래그도 가능)">
+          <PhotoUploader urls={photos} onChange={setPhotos} />
+        </Section>
 
-        <Field label="설명">
-          <textarea className="input min-h-[100px]" value={form.description} onChange={(e) => update("description", e.target.value)} />
-        </Field>
+        {/* 7. 설명 */}
+        <Section title="⑦ 설명" subtitle="역세권/학군/특이사항 등을 자유롭게 적어주세요">
+          <textarea
+            className="input min-h-[120px]"
+            placeholder="예) 역세권 신축, 즉시 입주 가능. 풀옵션 빌트인."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </Section>
 
         {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button className="w-full bg-pink-600 text-white py-3 rounded font-semibold">
-          등록하기
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full bg-pink-600 text-white py-3.5 rounded-lg font-bold text-base disabled:opacity-50"
+        >
+          {submitting ? "등록 중..." : "매물 등록하기"}
         </button>
       </form>
 
@@ -169,20 +447,169 @@ export default function NewListingPage() {
         :global(.input) {
           width: 100%;
           border: 1px solid #d4d4d4;
-          border-radius: 6px;
-          padding: 8px 12px;
+          border-radius: 8px;
+          padding: 9px 12px;
           background: white;
+          font-size: 14px;
+        }
+        :global(.input:focus) {
+          outline: 2px solid #f9a8d4;
+          border-color: #ec4899;
         }
       `}</style>
     </div>
   );
 }
 
+function Section({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border rounded-lg bg-white p-4">
+      <h2 className="font-bold text-base">{title}</h2>
+      {subtitle && <p className="text-xs text-neutral-500 mt-0.5 mb-3">{subtitle}</p>}
+      {!subtitle && <div className="mb-3" />}
+      {children}
+    </section>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-sm font-semibold block mb-1">{label}</label>
+      <label className="text-xs font-semibold text-neutral-600 block mb-1">{label}</label>
       {children}
     </div>
+  );
+}
+
+// 1평 ≈ 3.3058㎡
+const M2_PER_PY = 3.3058;
+
+function AreaInput({
+  m2,
+  setM2,
+  unit,
+  setUnit,
+}: {
+  m2: string; // 항상 ㎡로 저장 (부모 state)
+  setM2: (v: string) => void;
+  unit: "M2" | "PY";
+  setUnit: (u: "M2" | "PY") => void;
+}) {
+  // 사용자가 현재 단위로 직접 타이핑한 raw 텍스트.
+  // 부모 m2가 외부에서 바뀌었을 때만 동기화 (예: 단위 토글).
+  const [raw, setRaw] = useState<string>(() =>
+    m2 === "" ? "" : unit === "M2" ? m2 : (parseFloat(m2) / M2_PER_PY).toFixed(2),
+  );
+  const lastUnitRef = useRef(unit);
+  const lastM2Ref = useRef(m2);
+
+  useEffect(() => {
+    // 단위가 바뀌면 raw를 재계산
+    if (lastUnitRef.current !== unit) {
+      lastUnitRef.current = unit;
+      if (m2 === "") {
+        setRaw("");
+      } else if (unit === "M2") {
+        setRaw(m2);
+      } else {
+        setRaw((parseFloat(m2) / M2_PER_PY).toFixed(2));
+      }
+      lastM2Ref.current = m2;
+      return;
+    }
+    // 외부에서 m2가 바뀐 경우 (예: 초기화)
+    if (lastM2Ref.current !== m2 && m2 === "") {
+      setRaw("");
+      lastM2Ref.current = m2;
+    }
+  }, [m2, unit]);
+
+  function onInput(v: string) {
+    setRaw(v); // 입력은 그대로 보존 (소수점/지우기 등)
+    if (v === "") {
+      setM2("");
+      lastM2Ref.current = "";
+      return;
+    }
+    const num = parseFloat(v);
+    if (Number.isNaN(num)) return;
+    const next = unit === "M2" ? String(num) : (num * M2_PER_PY).toFixed(4);
+    setM2(next);
+    lastM2Ref.current = next;
+  }
+
+  const conv =
+    m2 === "" || raw === ""
+      ? ""
+      : unit === "M2"
+      ? `≈ ${(parseFloat(m2) / M2_PER_PY).toFixed(1)}평`
+      : `≈ ${parseFloat(m2).toFixed(1)}㎡`;
+
+  return (
+    <div>
+      <div className="flex gap-1">
+        <input
+          type="text"
+          inputMode="decimal"
+          className="input flex-1"
+          value={raw}
+          onChange={(e) => onInput(e.target.value)}
+        />
+        <div className="flex rounded border overflow-hidden shrink-0">
+          {(["M2", "PY"] as const).map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() => setUnit(u)}
+              className={`px-2 text-xs font-semibold ${
+                unit === u ? "bg-pink-600 text-white" : "bg-white text-neutral-600"
+              }`}
+            >
+              {u === "M2" ? "㎡" : "평"}
+            </button>
+          ))}
+        </div>
+      </div>
+      {conv && <p className="text-[10px] text-neutral-500 mt-0.5">{conv}</p>}
+    </div>
+  );
+}
+
+function BigOption({
+  active,
+  activeColor,
+  onClick,
+  label,
+  desc,
+}: {
+  active: boolean;
+  activeColor: "pink" | "blue";
+  onClick: () => void;
+  label: string;
+  desc: string;
+}) {
+  const activeCls =
+    activeColor === "pink"
+      ? "border-pink-500 bg-pink-50 text-pink-700"
+      : "border-blue-500 bg-blue-50 text-blue-700";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`p-4 rounded-lg border-2 text-center transition ${
+        active ? activeCls : "border-neutral-200 bg-white"
+      }`}
+    >
+      <div className="text-lg font-bold">{label}</div>
+      <div className="text-xs text-neutral-500 mt-1">{desc}</div>
+    </button>
   );
 }

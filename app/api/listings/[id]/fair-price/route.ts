@@ -15,10 +15,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    // Fallback heuristic
+    // Fallback heuristic (단위: 만원)
     const area = listing.areaExclusive ?? 60;
-    const pricePerM2 = listing.dealType === "SALE" ? 12_000_000 : 5_000_000;
-    const estimate = Math.round(area * pricePerM2);
+    const pricePerM2Man = listing.dealType === "SALE" ? 1_200 : 500; // 만원/㎡
+    const estimate = Math.round(area * pricePerM2Man);
     return NextResponse.json({
       estimate,
       low: Math.round(estimate * 0.92),
@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   const client = new Anthropic({ apiKey });
-  const prompt = `당신은 한국 부동산 시장의 적정가를 산정하는 전문가입니다. 다음 매물 정보를 보고 적정 가격(원 단위)을 추정해주세요.
+  const prompt = `당신은 한국 부동산 시장의 적정가를 산정하는 전문가입니다. 다음 매물 정보를 보고 적정 가격(만원 단위)을 추정해주세요.
 
 [매물 정보]
 - 주소: ${listing.address}
@@ -42,10 +42,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 - 준공: ${listing.builtYear ?? "미상"}년
 - 방/욕실: ${listing.rooms ?? "?"}/${listing.bathrooms ?? "?"}
 - 관리비: ${listing.maintenanceFee ?? 0}원
-- 등록 가격: ${listing.askingPrice}원
+- 등록 가격: ${listing.askingPrice}만원
 
-다음 JSON만 반환하세요(설명 텍스트 금지):
-{"estimate": <원>, "low": <원>, "high": <원>, "reasoning": "<2-3문장 한국어>"}`;
+다음 JSON만 반환하세요(설명 텍스트 금지). 모든 가격은 "만원" 단위 정수입니다:
+{"estimate": <만원>, "low": <만원>, "high": <만원>, "reasoning": "<2-3문장 한국어>"}`;
 
   try {
     const msg = await client.messages.create({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { notify } from "@/lib/notify";
 
 const Patch = z.object({
   action: z.enum(["ACCEPT", "REJECT", "WITHDRAW"]),
@@ -51,6 +52,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   if (parsed.data.action === "REJECT") {
     await prisma.bid.update({ where: { id }, data: { status: "REJECTED" } });
+    await notify(bid.proposerId, "BID_REJECTED", {
+      listingId: listing.id,
+      listingTitle: listing.title,
+      amount: bid.amount,
+    });
     return NextResponse.json({ ok: true });
   }
 
@@ -84,6 +90,27 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   });
 
   await prisma.listing.update({ where: { id: listing.id }, data: { status: "CLOSED" } });
+
+  // 알림: 양 당사자에게 딜 성사
+  await notify(buyerId, "DEAL_CLOSED", {
+    dealId: deal.id,
+    listingTitle: listing.title,
+    agreedPrice: bid.amount,
+  });
+  if (sellerId !== buyerId) {
+    await notify(sellerId, "DEAL_CLOSED", {
+      dealId: deal.id,
+      listingTitle: listing.title,
+      agreedPrice: bid.amount,
+    });
+  }
+  // 비드 제안자에게 별도로 ACCEPTED 알림 (이미 위 둘 중 하나일 수 있지만 명확히)
+  if (bid.proposerId !== buyerId && bid.proposerId !== sellerId) {
+    await notify(bid.proposerId, "BID_ACCEPTED", {
+      listingTitle: listing.title,
+      amount: bid.amount,
+    });
+  }
 
   return NextResponse.json({ ok: true, dealId: deal.id });
 }

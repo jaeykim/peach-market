@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { notify } from "@/lib/notify";
 
 const CreateBid = z.object({
   amount: z.number().int().nonnegative(),
@@ -90,6 +91,24 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   // 매물 상태를 협상중으로
   if (listing.status === "OPEN") {
     await prisma.listing.update({ where: { id }, data: { status: "IN_NEGOTIATION" } });
+  }
+
+  // 알림: 카운터면 상대방에게, 신규면 매물 소유자에게
+  if (parsed.data.parentBidId) {
+    const parent = await prisma.bid.findUnique({ where: { id: parsed.data.parentBidId } });
+    if (parent) {
+      await notify(parent.proposerId, "COUNTER_RECEIVED", {
+        listingId: id,
+        listingTitle: listing.title,
+        amount: parsed.data.amount,
+      });
+    }
+  } else {
+    await notify(listing.ownerId, "BID_RECEIVED", {
+      listingId: id,
+      listingTitle: listing.title,
+      amount: parsed.data.amount,
+    });
   }
 
   return NextResponse.json({ bid });

@@ -2,6 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import DealContractForm from "@/components/DealContractForm";
+import DealWorkflow from "@/components/DealWorkflow";
+import DealChat from "@/components/DealChat";
+import EarnestMoneyCard from "@/components/EarnestMoneyCard";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +23,15 @@ export default async function DealPage({
       listing: true,
       buyer: { select: { id: true, name: true, email: true, phone: true } },
       seller: { select: { id: true, name: true, email: true, phone: true } },
+      broker: {
+        select: {
+          id: true,
+          name: true,
+          brokerLicense: true,
+          brokerOffice: true,
+          brokerRegion: true,
+        },
+      },
     },
   });
   if (!deal) notFound();
@@ -54,10 +66,41 @@ export default async function DealPage({
         <PartyCard title="매수인" party={deal.buyer} />
       </section>
 
-      <section className="border rounded-lg bg-white p-4">
+      <section className="border rounded-lg bg-white p-4 mb-6">
         <h2 className="font-bold mb-3">계약 준비 정보</h2>
-        <DealContractForm dealId={deal.id} initial={contractData} />
+        <DealContractForm
+          dealId={deal.id}
+          agreedPrice={deal.agreedPrice}
+          initial={contractData}
+        />
       </section>
+
+      <div className="mb-6">
+        <EarnestMoneyCard
+          dealId={deal.id}
+          isBuyer={deal.buyerId === user.id}
+          isSeller={deal.sellerId === user.id}
+          agreedPrice={deal.agreedPrice}
+          initialAmount={deal.earnestMoney}
+          initialStatus={deal.earnestMoneyStatus}
+          initialPaidAt={deal.earnestMoneyPaidAt?.toISOString() ?? null}
+          initialConfirmedAt={deal.earnestMoneyConfirmedAt?.toISOString() ?? null}
+        />
+      </div>
+
+      <DealWorkflow
+        dealId={deal.id}
+        initialContract={contractData.generatedContract ?? null}
+        initialBroker={deal.broker}
+        isBuyer={deal.buyerId === user.id}
+        isSeller={deal.sellerId === user.id}
+        initialBuyerSignature={contractData.buyerSignature ?? null}
+        initialSellerSignature={contractData.sellerSignature ?? null}
+      />
+
+      <div className="mt-6">
+        <DealChat dealId={deal.id} currentUserId={user.id} />
+      </div>
     </div>
   );
 }
@@ -79,11 +122,12 @@ function PartyCard({
   );
 }
 
-function formatPrice(won: number) {
-  if (won >= 100_000_000) {
-    const eok = Math.floor(won / 100_000_000);
-    const man = Math.round((won % 100_000_000) / 10_000);
-    return man ? `${eok}억 ${man.toLocaleString()}만원` : `${eok}억원`;
+// 입력 단위: 만원
+function formatPrice(man: number) {
+  if (man >= 10_000) {
+    const eok = Math.floor(man / 10_000);
+    const rest = man % 10_000;
+    return rest ? `${eok}억 ${rest.toLocaleString()}만원` : `${eok}억원`;
   }
-  return `${Math.round(won / 10_000).toLocaleString()}만원`;
+  return `${man.toLocaleString()}만원`;
 }

@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 const CreateBody = z.object({
   side: z.enum(["SELL", "BUY"]),
+  isSublet: z.boolean().optional(),
   address: z.string().min(1),
   addressDetail: z.string().optional(),
   lat: z.number(),
@@ -21,8 +22,12 @@ const CreateBody = z.object({
   bathrooms: z.number().int().optional(),
   maintenanceFee: z.number().int().optional(),
   askingPrice: z.number().int().nonnegative(),
+  priceMin: z.number().int().nonnegative().optional(),
+  priceMax: z.number().int().nonnegative().optional(),
+  deposit: z.number().int().nonnegative().optional(),
   dealType: z.enum(["SALE", "JEONSE", "MONTHLY"]),
   description: z.string().optional(),
+  photos: z.string().optional(), // JSON-encoded array of URLs
 });
 
 // GET /api/listings — 지도에 표시할 매물 목록 (공개 정보만)

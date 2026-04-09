@@ -19,6 +19,7 @@ export default function BidPanel({
   listingSide,
   askingPrice,
   isOwner,
+  currentUserId,
   isLoggedIn,
   isClosed,
 }: {
@@ -26,6 +27,7 @@ export default function BidPanel({
   listingSide: string;
   askingPrice: number;
   isOwner: boolean;
+  currentUserId: string | null;
   isLoggedIn: boolean;
   isClosed: boolean;
 }) {
@@ -170,67 +172,124 @@ export default function BidPanel({
       ) : (
         <div className="space-y-3">
           {threads.map((thread, i) => (
-            <div key={i} className="border rounded p-2 space-y-1">
-              {thread.map((b) => (
-                <div key={b.id} className="text-sm flex items-start justify-between gap-2">
-                  <div>
-                    <div>
-                      <span className="font-semibold">{b.proposer.name}</span>{" "}
-                      <span className="text-pink-600 font-bold">{formatPrice(b.amount)}</span>{" "}
-                      <span className="text-xs text-neutral-500">[{statusLabel(b.status)}]</span>
+            <div key={i} className="border rounded p-2 space-y-2">
+              {thread.map((b) => {
+                const mine = currentUserId === b.proposer.id;
+                return (
+                  <div key={b.id} className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm">
+                        <span className="font-semibold">
+                          {mine ? "내 제안" : b.proposer.name}
+                        </span>{" "}
+                        <span className="text-xs text-neutral-500">
+                          [{statusLabel(b.status)}]
+                        </span>
+                      </div>
+                      <div className="text-base font-bold text-pink-600">
+                        {b.amount.toLocaleString()}만원
+                      </div>
+                      <div className="text-[11px] text-neutral-500">
+                        ≈ {koreanAmount(b.amount)}
+                      </div>
+                      {b.message && (
+                        <div className="text-xs text-neutral-600 mt-1 bg-neutral-50 rounded px-2 py-1">
+                          💬 {b.message}
+                        </div>
+                      )}
                     </div>
-                    {b.message && <div className="text-xs text-neutral-600">{b.message}</div>}
+                    {b.status === "PENDING" && (
+                      <div className="flex flex-col gap-1 shrink-0">
+                        {mine ? (
+                          // 내가 보낸 제안 → 철회만
+                          <button
+                            onClick={() => action(b.id, "WITHDRAW")}
+                            className="text-xs bg-neutral-200 text-neutral-700 px-2 py-1 rounded font-semibold"
+                          >
+                            철회
+                          </button>
+                        ) : (
+                          // 받은 제안 → 수락/거절/카운터
+                          <>
+                            <button
+                              onClick={() => action(b.id, "ACCEPT")}
+                              className="text-xs bg-green-600 text-white px-2 py-1 rounded font-bold"
+                            >
+                              수락
+                            </button>
+                            <button
+                              onClick={() => action(b.id, "REJECT")}
+                              className="text-xs bg-neutral-200 text-neutral-700 px-2 py-1 rounded font-semibold"
+                            >
+                              거절
+                            </button>
+                            <button
+                              onClick={() => setParentBidId(b.id)}
+                              className="text-xs bg-blue-600 text-white px-2 py-1 rounded font-bold"
+                            >
+                              카운터
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {b.status === "PENDING" && (
-                    <div className="flex gap-1 shrink-0">
-                      {/* 본인 제안이면 철회만 */}
-                      <BidActions
-                        bid={b}
-                        isOwner={isOwner}
-                        onAction={action}
-                        onCounter={() => setParentBidId(b.id)}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>
       )}
 
-      {!isOwner || threads.length > 0 ? (
+      {/* 입찰 폼: 비드 보낼 권한이 있는 경우만 표시
+          - 매물 소유자: 카운터오퍼만 (parentBidId 있을 때)
+          - 외부 사용자: 신규 비드 또는 받은 카운터에 대한 카운터 */}
+      {(parentBidId || !isOwner) && (
         <form onSubmit={submitBid} className="space-y-2 pt-3 border-t">
           {parentBidId && (
             <div className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded flex justify-between">
-              <span>카운터오퍼 작성 중</span>
-              <button type="button" onClick={() => setParentBidId(null)}>취소</button>
+              <span>↩️ 카운터오퍼 작성 중</span>
+              <button type="button" onClick={() => setParentBidId(null)}>
+                취소
+              </button>
             </div>
           )}
-          <input
-            type="number"
-            placeholder={`가격 (원) - 등록가 ${formatPrice(askingPrice)}`}
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
+          <div>
+            <input
+              type="number"
+              placeholder={`가격 (만원) - 등록가 ${askingPrice.toLocaleString()}만원`}
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+            {amount && (
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                {parseInt(amount, 10).toLocaleString()}만원 ≈{" "}
+                {koreanAmount(parseInt(amount, 10) || 0)}
+              </p>
+            )}
+          </div>
           <textarea
-            placeholder="메시지 (선택)"
+            placeholder="메시지 (선택) — 잔금 일정, 조건 등"
             className="w-full border rounded px-3 py-2 text-sm"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            rows={2}
           />
           {error && <p className="text-red-600 text-xs">{error}</p>}
           <button
             type="submit"
-            disabled={isOwner && !parentBidId}
-            className="w-full bg-pink-600 text-white py-2 rounded font-semibold text-sm disabled:bg-neutral-300"
+            className="w-full bg-pink-600 text-white py-2 rounded font-semibold text-sm"
           >
-            {isOwner ? "카운터오퍼 보내기" : listingSide === "SELL" ? "가격 제안하기" : "매도가 제안하기"}
+            {parentBidId
+              ? "카운터오퍼 보내기"
+              : listingSide === "SELL"
+              ? "가격 제안하기"
+              : "매도가 제안하기"}
           </button>
         </form>
-      ) : null}
+      )}
 
       <p className="text-[11px] text-neutral-500">
         🔒 협상 내용은 당사자 외 누구에게도 공개되지 않습니다.
@@ -239,40 +298,16 @@ export default function BidPanel({
   );
 }
 
-function BidActions({
-  bid,
-  onAction,
-  onCounter,
-}: {
-  bid: Bid;
-  isOwner: boolean;
-  onAction: (id: string, a: "ACCEPT" | "REJECT" | "WITHDRAW") => void;
-  onCounter: () => void;
-}) {
-  // 본인 제안은 철회만 가능
-  // 이 컴포넌트에서는 현재 사용자가 누구인지 모르므로 owner는 ACCEPT/REJECT/COUNTER, 그렇지 않은 경우 ACCEPT(상대 카운터)
-  return (
-    <div className="flex gap-1">
-      <button
-        onClick={() => onAction(bid.id, "ACCEPT")}
-        className="text-xs bg-green-600 text-white px-2 py-0.5 rounded"
-      >
-        수락
-      </button>
-      <button
-        onClick={() => onAction(bid.id, "REJECT")}
-        className="text-xs bg-neutral-200 px-2 py-0.5 rounded"
-      >
-        거절
-      </button>
-      <button
-        onClick={onCounter}
-        className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded"
-      >
-        카운터
-      </button>
-    </div>
-  );
+// 만원 단위 → 한국어 (예: 240000 → "24억원", 50000 → "5억원", 250 → "250만원")
+function koreanAmount(man: number): string {
+  if (man <= 0) return "0원";
+  if (man >= 10_000) {
+    const eok = Math.floor(man / 10_000);
+    const rest = man % 10_000;
+    if (rest === 0) return `${eok}억원`;
+    return `${eok}억 ${rest.toLocaleString()}만원`;
+  }
+  return `${man.toLocaleString()}만원`;
 }
 
 function groupByThread(bids: Bid[]): Bid[][] {
@@ -300,13 +335,14 @@ function groupByThread(bids: Bid[]): Bid[][] {
   return threads;
 }
 
-function formatPrice(won: number) {
-  if (won >= 100_000_000) {
-    const eok = Math.floor(won / 100_000_000);
-    const man = Math.round((won % 100_000_000) / 10_000);
-    return man ? `${eok}억 ${man.toLocaleString()}만` : `${eok}억`;
+// 입력 단위: 만원
+function formatPrice(man: number) {
+  if (man >= 10_000) {
+    const eok = Math.floor(man / 10_000);
+    const rest = man % 10_000;
+    return rest ? `${eok}억 ${rest.toLocaleString()}만` : `${eok}억`;
   }
-  return `${Math.round(won / 10_000).toLocaleString()}만`;
+  return `${man.toLocaleString()}만`;
 }
 
 function statusLabel(s: string) {
