@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Block = { start: string; end: string; confirmed: boolean };
 
@@ -20,6 +20,8 @@ export default function RentalCalendar({
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
   const [hint, setHint] = useState<string>("");
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   useEffect(() => {
     fetch(`/api/listings/${listingId}/blocked-dates`)
@@ -117,6 +119,31 @@ export default function RentalCalendar({
   function reset() {
     onChange(null, null);
     setHint("");
+  }
+
+  // 캘린더 뷰를 특정 날짜가 보이도록 이동
+  function jumpTo(target: string) {
+    const t = fromYmd(target);
+    const months =
+      (t.getFullYear() - today.getFullYear()) * 12 +
+      (t.getMonth() - today.getMonth());
+    setMonthOffset(Math.max(0, months));
+  }
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    // 가로 스와이프만 (세로 스크롤과 구분)
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx > 0) setMonthOffset((o) => Math.max(0, o - 1));
+    else setMonthOffset((o) => o + 1);
   }
 
   function shift(deltaDays: number) {
@@ -224,8 +251,11 @@ export default function RentalCalendar({
         </button>
         <div className="text-xs text-neutral-500 text-center">
           {!startDate
-            ? `시작일을 누르면 ${minDays}일이 자동 선택됩니다`
-            : "종료일을 눌러 기간을 늘리거나, 새 시작일을 누르세요"}
+            ? `시작일을 누르면 ${minDays}일이 자동 선택돼요`
+            : "다른 날을 눌러 기간을 조정하세요"}
+          <div className="text-[10px] text-neutral-400 mt-0.5 hidden sm:block">
+            👆 좌우 스와이프 또는 ‹ › 버튼
+          </div>
         </div>
         <button
           type="button"
@@ -236,7 +266,11 @@ export default function RentalCalendar({
         </button>
       </div>
 
-      <div className="flex gap-3">
+      <div
+        className="flex gap-3 select-none touch-pan-y"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {renderMonth(0)}
         {renderMonth(1)}
       </div>
@@ -249,18 +283,34 @@ export default function RentalCalendar({
 
       {startDate && endDate && (
         <div className="mt-3 p-3 bg-pink-50 border border-pink-200 rounded text-sm space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <strong>{startDate}</strong> ~ <strong>{endDate}</strong>
               <span className="text-neutral-600"> · {days}일</span>
             </div>
-            <button
-              type="button"
-              onClick={reset}
-              className="text-xs text-neutral-500 underline"
-            >
-              초기화
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => jumpTo(startDate)}
+                className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100"
+              >
+                ⇤ 시작일
+              </button>
+              <button
+                type="button"
+                onClick={() => jumpTo(endDate)}
+                className="text-[11px] bg-white border rounded px-2 py-0.5 hover:bg-pink-100"
+              >
+                종료일 ⇥
+              </button>
+              <button
+                type="button"
+                onClick={reset}
+                className="text-xs text-neutral-500 underline"
+              >
+                초기화
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-1">
