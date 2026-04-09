@@ -3,8 +3,10 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import DealWorkflow from "@/components/DealWorkflow";
 import DealChat from "@/components/DealChat";
-import EarnestMoneyCard from "@/components/EarnestMoneyCard";
 import PaymentCard from "@/components/PaymentCard";
+import CompleteDealButton from "@/components/CompleteDealButton";
+import ReviewSection from "@/components/ReviewSection";
+import LandlordApprovalCard from "@/components/LandlordApprovalCard";
 
 export const dynamic = "force-dynamic";
 
@@ -41,24 +43,57 @@ export default async function DealPage({
 
   const contractData = deal.contractData ? JSON.parse(deal.contractData) : {};
   const bothSigned = !!contractData.buyerSignature && !!contractData.sellerSignature;
+  const landlordApproved = deal.landlordApprovalStatus === "APPROVED";
+  const landlordRejected = deal.landlordApprovalStatus === "REJECTED";
+  const isBuyer = deal.buyerId === user.id;
+  const isSeller = deal.sellerId === user.id;
+
+  // 진행 단계 판단
+  let banner: { title: string; desc: string; color: string };
+  if (deal.status === "COMPLETED") {
+    banner = {
+      title: "🎉 입주 완료",
+      desc: "에스크로 정산이 완료되어 거래가 종결되었습니다.",
+      color: "green",
+    };
+  } else if (landlordRejected) {
+    banner = {
+      title: "❌ 신청이 거절되었습니다",
+      desc: "가계약금은 자동 환불됩니다.",
+      color: "red",
+    };
+  } else if (!landlordApproved) {
+    banner = {
+      title: "⏳ 집주인 수락 대기 중",
+      desc: "가계약금이 에스크로에 보관되었습니다. 집주인이 수락하면 계약서가 자동 작성됩니다.",
+      color: "yellow",
+    };
+  } else if (!bothSigned) {
+    banner = {
+      title: "📝 계약서 서명 진행 중",
+      desc: "자동 생성된 계약서를 검토하고 서명해주세요.",
+      color: "blue",
+    };
+  } else {
+    banner = {
+      title: "💰 잔금·보증금 에스크로 대기",
+      desc: "양측 서명 완료. 이제 보증금과 첫 달 월세를 에스크로에 입금해주세요.",
+      color: "blue",
+    };
+  }
+  const bannerCls = {
+    green: "bg-green-50 border-green-200 text-green-800",
+    blue: "bg-blue-50 border-blue-200 text-blue-800",
+    yellow: "bg-yellow-50 border-yellow-200 text-yellow-800",
+    red: "bg-red-50 border-red-200 text-red-800",
+  }[banner.color];
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      {bothSigned ? (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <h1 className="text-xl font-bold text-green-800">🎉 계약이 체결되었습니다</h1>
-          <p className="text-sm text-green-700 mt-1">
-            양 당사자의 전자서명이 모두 완료되어 계약이 성립되었습니다.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h1 className="text-xl font-bold text-blue-800">📝 계약 진행 중</h1>
-          <p className="text-sm text-blue-700 mt-1">
-            계약서를 검토하고 서명해주세요. 양측 서명이 완료되면 계약이 체결됩니다.
-          </p>
-        </div>
-      )}
+      <div className={`border rounded-lg p-4 mb-6 ${bannerCls}`}>
+        <h1 className="text-xl font-bold">{banner.title}</h1>
+        <p className="text-sm mt-1 opacity-90">{banner.desc}</p>
+      </div>
 
       <section className="border rounded-lg bg-white p-4 mb-6">
         <h2 className="font-bold mb-3">매물 정보</h2>
@@ -82,12 +117,38 @@ export default async function DealPage({
       </section>
 
 
-      {deal.listing.dealType !== "SALE" && (
-        <div className="mb-6">
+      {/* 1. 집주인 수락 카드 (가장 먼저) */}
+      <div className="mb-6">
+        <LandlordApprovalCard
+          dealId={deal.id}
+          isSeller={isSeller}
+          status={deal.landlordApprovalStatus}
+          earnestMoney={deal.earnestMoney}
+          buyerName={deal.buyer.name}
+          rejectReason={deal.landlordRejectReason}
+        />
+      </div>
+
+      {/* 2. 계약서 + 서명 워크플로우 (수락 후에만 의미) */}
+      {landlordApproved && (
+        <DealWorkflow
+          dealId={deal.id}
+          initialContract={contractData.generatedContract ?? null}
+          initialBroker={deal.broker}
+          isBuyer={isBuyer}
+          isSeller={isSeller}
+          initialBuyerSignature={contractData.buyerSignature ?? null}
+          initialSellerSignature={contractData.sellerSignature ?? null}
+        />
+      )}
+
+      {/* 3. 보증금·월세 에스크로 결제 (양측 서명 후) */}
+      {landlordApproved && bothSigned && deal.listing.dealType !== "SALE" && (
+        <div className="mt-6">
           <PaymentCard
             dealId={deal.id}
-            isBuyer={deal.buyerId === user.id}
-            isSeller={deal.sellerId === user.id}
+            isBuyer={isBuyer}
+            isSeller={isSeller}
             dealType={deal.listing.dealType}
             isShortTerm={deal.listing.isShortTerm}
             rentalMonths={deal.listing.rentalMonths}
@@ -97,28 +158,26 @@ export default async function DealPage({
         </div>
       )}
 
-      <div className="mb-6">
-        <EarnestMoneyCard
+      <div className="mt-6">
+        <CompleteDealButton
           dealId={deal.id}
-          isBuyer={deal.buyerId === user.id}
-          isSeller={deal.sellerId === user.id}
-          agreedPrice={deal.agreedPrice}
-          initialAmount={deal.earnestMoney}
-          initialStatus={deal.earnestMoneyStatus}
-          initialPaidAt={deal.earnestMoneyPaidAt?.toISOString() ?? null}
-          initialConfirmedAt={deal.earnestMoneyConfirmedAt?.toISOString() ?? null}
+          canComplete={
+            !!contractData.buyerSignature &&
+            !!contractData.sellerSignature &&
+            deal.status !== "COMPLETED" &&
+            deal.buyerId === user.id
+          }
+          alreadyCompleted={deal.status === "COMPLETED"}
         />
       </div>
 
-      <DealWorkflow
-        dealId={deal.id}
-        initialContract={contractData.generatedContract ?? null}
-        initialBroker={deal.broker}
-        isBuyer={deal.buyerId === user.id}
-        isSeller={deal.sellerId === user.id}
-        initialBuyerSignature={contractData.buyerSignature ?? null}
-        initialSellerSignature={contractData.sellerSignature ?? null}
-      />
+      <div className="mt-6">
+        <ReviewSection
+          dealId={deal.id}
+          currentUserId={user.id}
+          enabled={deal.status === "COMPLETED"}
+        />
+      </div>
 
       <div className="mt-6">
         <DealChat dealId={deal.id} currentUserId={user.id} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 export default function ApplyButton({
@@ -29,6 +29,13 @@ export default function ApplyButton({
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  // 가계약금 기본값: 월세의 50% 또는 10만원 (최소)
+  const defaultEarnest = useMemo(() => {
+    return Math.max(10, Math.round(monthlyAmount * 0.5));
+  }, [monthlyAmount]);
+  const [earnestMoney, setEarnestMoney] = useState(String(defaultEarnest));
 
   async function apply() {
     setSubmitting(true);
@@ -36,6 +43,8 @@ export default function ApplyButton({
     try {
       const res = await fetch(`/api/listings/${listingId}/apply`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ earnestMoney: parseInt(earnestMoney, 10) || 0 }),
       });
       if (!res.ok) {
         const j = await res.json();
@@ -114,28 +123,61 @@ export default function ApplyButton({
       )}
 
       <ol className="text-xs text-neutral-600 space-y-1">
-        <li>1. 신청 시 자동으로 계약서가 생성돼요</li>
-        <li>2. 임차인(나)이 계약서 검토 → 서명 → 에스크로 결제</li>
-        <li>3. 임대인이 계약서 검토 → 서명·승인 → 입주 확정</li>
+        <li>1. 가계약금 입금하고 신청 접수</li>
+        <li>2. 집주인 수락</li>
+        <li>3. 등기부 자동 확인 · 계약서 자동 작성</li>
+        <li>4. 양측 전자서명 + 보증금·잔금 에스크로 입금</li>
+        <li>5. 정산 · 입주 완료</li>
       </ol>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
-
-      {isLoggedIn ? (
-        <button
-          onClick={apply}
-          disabled={submitting}
-          className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded disabled:opacity-50"
-        >
-          {submitting ? "신청 중..." : "🔑 이 방 신청하기"}
-        </button>
-      ) : (
+      {!isLoggedIn ? (
         <a
           href="/login"
           className="block w-full text-center bg-pink-600 text-white font-bold py-3 rounded"
         >
           로그인하고 신청하기
         </a>
+      ) : !showForm ? (
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded"
+        >
+          🔑 이 방 신청하기
+        </button>
+      ) : (
+        <div className="space-y-2 border-t pt-3">
+          <label className="text-xs font-semibold text-neutral-600 block">
+            가계약금 (만원)
+          </label>
+          <input
+            type="number"
+            value={earnestMoney}
+            onChange={(e) => setEarnestMoney(e.target.value)}
+            className="w-full border rounded px-3 py-2 text-sm"
+            min={0}
+          />
+          <p className="text-[11px] text-neutral-500">
+            추천: {defaultEarnest.toLocaleString()}만원 (월세의 50%)
+            <br />
+            거절 시 전액 환불됩니다.
+          </p>
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={apply}
+              disabled={submitting || !earnestMoney}
+              className="flex-1 bg-pink-600 text-white font-bold py-2.5 rounded text-sm disabled:opacity-50"
+            >
+              {submitting ? "신청 중..." : `🛡️ ${parseInt(earnestMoney, 10).toLocaleString()}만원 입금하고 신청`}
+            </button>
+            <button
+              onClick={() => setShowForm(false)}
+              className="bg-neutral-200 text-neutral-700 px-4 py-2 rounded text-sm"
+            >
+              취소
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

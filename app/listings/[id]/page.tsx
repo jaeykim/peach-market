@@ -6,6 +6,7 @@ import RegistryViewer from "@/components/RegistryViewer";
 import FavoriteButton from "@/components/FavoriteButton";
 import MatchRecommendations from "@/components/MatchRecommendations";
 import PhotoGallery from "@/components/PhotoGallery";
+import ReportButton from "@/components/ReportButton";
 import { sideLongLabel, priceRangeLabel } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
@@ -160,6 +161,9 @@ export default async function ListingDetailPage({
           />
           {user && <RegistryViewer listingId={listing.id} />}
           <MatchRecommendations listingId={listing.id} />
+          {!isOwner && (
+            <ReportButton listingId={listing.id} loggedIn={!!user} />
+          )}
         </div>
       </div>
     </div>
