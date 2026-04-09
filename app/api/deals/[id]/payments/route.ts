@@ -7,6 +7,7 @@ import { notify } from "@/lib/notify";
 const PostBody = z.object({
   amount: z.number().int().positive(),
   type: z.enum(["MONTHLY_RENT", "SHORT_TERM_FULL", "DEPOSIT"]),
+  method: z.enum(["TRANSFER", "CARD"]).default("TRANSFER"),
   billingMonth: z.string().optional(), // "2026-05"
   cardLast4: z.string().optional(),
   cardBrand: z.string().optional(),
@@ -52,9 +53,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       amount: parsed.data.amount,
       type: parsed.data.type,
       billingMonth: parsed.data.billingMonth,
-      cardLast4: parsed.data.cardLast4 || "1234",
-      cardBrand: parsed.data.cardBrand || "현대카드",
-      method: "CARD",
+      method: parsed.data.method,
+      cardLast4: parsed.data.method === "CARD" ? parsed.data.cardLast4 || "1234" : null,
+      cardBrand: parsed.data.method === "CARD" ? parsed.data.cardBrand || "현대카드" : null,
       status: "PAID",
     },
   });
@@ -66,9 +67,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       : parsed.data.type === "SHORT_TERM_FULL"
       ? "단기임대 전체 금액"
       : "보증금";
+  const methodIcon = parsed.data.method === "CARD" ? "💳 카드" : "🛡️ 에스크로";
   await notify(deal.sellerId, "CHAT_MESSAGE", {
     dealId: id,
-    preview: `💳 임차인이 ${label} ${parsed.data.amount.toLocaleString()}만원을 카드로 결제했습니다.`,
+    preview: `${methodIcon}로 ${label} ${parsed.data.amount.toLocaleString()}만원이 피치마켓에 도착했습니다.`,
   });
 
   return NextResponse.json({ payment });

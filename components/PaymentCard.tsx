@@ -7,6 +7,7 @@ type Payment = {
   amount: number;
   type: "MONTHLY_RENT" | "SHORT_TERM_FULL" | "DEPOSIT" | string;
   billingMonth: string | null;
+  method: string;
   cardLast4: string | null;
   cardBrand: string | null;
   status: string;
@@ -14,6 +15,13 @@ type Payment = {
 };
 
 const CARD_BRANDS = ["현대카드", "신한카드", "삼성카드", "KB국민카드", "우리카드"];
+
+// 피치마켓 에스크로 가상 계좌 (데모)
+const ESCROW_ACCOUNT = {
+  bank: "피치마켓 에스크로 (토스페이먼츠 가상계좌)",
+  number: "9999-0123-456789",
+  holder: "피치마켓 에스크로",
+};
 
 function currentMonth(): string {
   const d = new Date();
@@ -54,6 +62,7 @@ export default function PaymentCard({
   const isShortTermRental = isShortTerm && rentalMonths;
   const fullAmount = isShortTermRental ? monthlyAmount * rentalMonths! : monthlyAmount;
 
+  const [method, setMethod] = useState<"TRANSFER" | "CARD">("TRANSFER");
   const [cardNumber, setCardNumber] = useState("4000123412345678");
   const [cardBrand, setCardBrand] = useState(CARD_BRANDS[0]);
   const [billingMonth, setBillingMonth] = useState(currentMonth());
@@ -79,9 +88,10 @@ export default function PaymentCard({
       const body = {
         amount: type === "SHORT_TERM_FULL" ? fullAmount : monthlyAmount,
         type,
+        method,
         billingMonth: type === "MONTHLY_RENT" ? billingMonth : undefined,
-        cardLast4: cardNumber.slice(-4),
-        cardBrand,
+        cardLast4: method === "CARD" ? cardNumber.slice(-4) : undefined,
+        cardBrand: method === "CARD" ? cardBrand : undefined,
       };
       const res = await fetch(`/api/deals/${dealId}/payments`, {
         method: "POST",
@@ -111,11 +121,12 @@ export default function PaymentCard({
     <section className="border rounded-lg bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-bold">💳 카드 결제</h2>
+          <h2 className="font-bold">🛡️ 결제 (피치마켓 에스크로)</h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             {isShortTermRental
-              ? `단기임대 ${rentalMonths}개월 전체 금액을 한 번에 결제`
-              : "매달 월세를 카드로 간편하게 결제"}
+              ? `단기임대 ${rentalMonths}개월 전체 금액을 한 번에`
+              : "매달 월세 결제"}
+            {" "}· 피치마켓이 안전하게 보관한 뒤 임대인에게 입금합니다.
           </p>
         </div>
       </div>
@@ -166,7 +177,10 @@ export default function PaymentCard({
                     {" "}· {p.amount.toLocaleString()}만원
                   </div>
                   <div className="text-neutral-500">
-                    {p.cardBrand} ****{p.cardLast4} ·{" "}
+                    {p.method === "CARD"
+                      ? `💳 ${p.cardBrand} ****${p.cardLast4}`
+                      : "🛡️ 에스크로 이체"}
+                    {" · "}
                     {new Date(p.paidAt).toLocaleString("ko-KR")}
                   </div>
                 </div>
@@ -192,7 +206,7 @@ export default function PaymentCard({
                 onClick={() => setShowPay(true)}
                 className="w-full bg-pink-600 text-white font-bold py-2.5 rounded text-sm"
               >
-                💳 {fullAmount.toLocaleString()}만원 카드 결제
+                🛡️ {fullAmount.toLocaleString()}만원 결제하기
               </button>
             )
           ) : (
@@ -206,7 +220,7 @@ export default function PaymentCard({
                   onClick={() => setShowPay(true)}
                   className="w-full bg-pink-600 text-white font-bold py-2.5 rounded text-sm"
                 >
-                  💳 {billingMonth} 월세 카드 결제
+                  🛡️ {billingMonth} 월세 결제하기
                 </button>
               )}
             </>
@@ -222,7 +236,36 @@ export default function PaymentCard({
 
       {showPay && isBuyer && (
         <div className="mt-4 border-2 border-pink-300 rounded p-3 space-y-3 bg-pink-50/50">
-          <h3 className="text-sm font-bold">카드 정보 입력</h3>
+          <h3 className="text-sm font-bold">결제 수단 선택</h3>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setMethod("TRANSFER")}
+              className={`p-3 rounded border-2 text-left transition ${
+                method === "TRANSFER"
+                  ? "border-pink-500 bg-white"
+                  : "border-neutral-200 bg-white/50"
+              }`}
+            >
+              <div className="text-sm font-bold">🛡️ 에스크로 이체</div>
+              <div className="text-[11px] text-neutral-500 mt-0.5">
+                가상계좌로 송금 · 추천
+              </div>
+            </button>
+            <button
+              onClick={() => setMethod("CARD")}
+              className={`p-3 rounded border-2 text-left transition ${
+                method === "CARD"
+                  ? "border-pink-500 bg-white"
+                  : "border-neutral-200 bg-white/50"
+              }`}
+            >
+              <div className="text-sm font-bold">💳 카드 결제</div>
+              <div className="text-[11px] text-neutral-500 mt-0.5">
+                신용·체크카드 즉시 결제
+              </div>
+            </button>
+          </div>
 
           {!isShortTermRental && (
             <div>
@@ -238,36 +281,66 @@ export default function PaymentCard({
             </div>
           )}
 
-          <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">
-              카드 번호
-            </label>
-            <input
-              type="text"
-              value={cardNumber}
-              onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 16))}
-              className="border rounded px-3 py-2 text-sm w-full font-mono"
-              placeholder="0000 0000 0000 0000"
-              maxLength={16}
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-neutral-600 block mb-1">
-              카드사
-            </label>
-            <select
-              value={cardBrand}
-              onChange={(e) => setCardBrand(e.target.value)}
-              className="border rounded px-3 py-2 text-sm w-full bg-white"
-            >
-              {CARD_BRANDS.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </div>
+          {method === "TRANSFER" ? (
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs space-y-1">
+              <div className="font-bold text-blue-900">🛡️ 에스크로 가상 계좌</div>
+              <div>
+                은행: <strong>{ESCROW_ACCOUNT.bank}</strong>
+              </div>
+              <div>
+                계좌번호: <strong>{ESCROW_ACCOUNT.number}</strong>
+              </div>
+              <div>
+                예금주: <strong>{ESCROW_ACCOUNT.holder}</strong>
+              </div>
+              <p className="text-[11px] text-blue-700 mt-2">
+                ✅ 입금이 확인되면 피치마켓이 안전하게 보관한 뒤,
+                {isShortTermRental
+                  ? " 계약 완료 시 임대인에게 일괄 송금합니다."
+                  : " 매월 임대인에게 자동 송금합니다."}
+              </p>
+              <p className="text-[10px] text-neutral-400 italic mt-1">
+                ⚠️ 데모: 실제 송금은 발생하지 않습니다. (실서비스 시 토스페이먼츠 PG 가상계좌 발급)
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs font-semibold text-neutral-600 block mb-1">
+                  카드 번호
+                </label>
+                <input
+                  type="text"
+                  value={cardNumber}
+                  onChange={(e) =>
+                    setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 16))
+                  }
+                  className="border rounded px-3 py-2 text-sm w-full font-mono"
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={16}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-neutral-600 block mb-1">
+                  카드사
+                </label>
+                <select
+                  value={cardBrand}
+                  onChange={(e) => setCardBrand(e.target.value)}
+                  className="border rounded px-3 py-2 text-sm w-full bg-white"
+                >
+                  {CARD_BRANDS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[10px] text-neutral-400 italic">
+                ⚠️ 데모 결제입니다. 실제 카드 승인은 발생하지 않습니다.
+              </p>
+            </div>
+          )}
 
           <div className="bg-white border rounded p-3 text-sm">
             <div className="flex justify-between">
@@ -276,9 +349,6 @@ export default function PaymentCard({
                 {(isShortTermRental ? fullAmount : monthlyAmount).toLocaleString()}만원
               </span>
             </div>
-            <p className="text-[10px] text-neutral-400 italic mt-1">
-              ⚠️ 데모 결제입니다. 실제 카드 승인은 발생하지 않습니다. (실서비스 시 토스페이먼츠·나이스페이먼츠 연동)
-            </p>
           </div>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
@@ -288,10 +358,14 @@ export default function PaymentCard({
               onClick={() =>
                 submit(isShortTermRental ? "SHORT_TERM_FULL" : "MONTHLY_RENT")
               }
-              disabled={paying || !cardNumber || cardNumber.length < 8}
+              disabled={paying || (method === "CARD" && (!cardNumber || cardNumber.length < 8))}
               className="flex-1 bg-pink-600 text-white font-bold py-2 rounded text-sm disabled:opacity-50"
             >
-              {paying ? "결제 중..." : "💳 결제하기"}
+              {paying
+                ? "처리 중..."
+                : method === "TRANSFER"
+                ? "🛡️ 입금 완료 표시"
+                : "💳 카드 결제"}
             </button>
             <button
               onClick={() => setShowPay(false)}
